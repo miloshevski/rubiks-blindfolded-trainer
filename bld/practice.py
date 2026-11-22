@@ -7,7 +7,7 @@ Pochmann algorithm, in the order typed.
 """
 from . import method
 from .constants import LETTERS, PARITY_ALGS
-from .cube import (CORNER, EDGE, apply_alg, centers_solved, home_letter, is_solved, piece_of,
+from .cube import (CORNER, EDGE, apply_algs, centers_solved, home_letter, is_solved, piece_of,
                    slot_name)
 
 
@@ -20,15 +20,17 @@ def normalize(text):
     return letters
 
 
+def _reject_buffer(letters, buffer_letters, kind_name):
+    for l in letters:
+        if l in buffer_letters:
+            raise ValueError(f"{kind_name} letter {l} is the buffer (no algorithm)")
+
+
 def user_steps(edges, corners, parity_number=None):
     """[(label, algorithm), ...] in execution order: edges, parity, corners."""
     edge_letters, corner_letters = normalize(edges), normalize(corners)
-    for l in edge_letters:
-        if l in method.EDGE_BUFFER_LETTERS:
-            raise ValueError(f"edge letter {l} is the buffer (no algorithm)")
-    for l in corner_letters:
-        if l in method.CORNER_BUFFER_LETTERS:
-            raise ValueError(f"corner letter {l} is the buffer (no algorithm)")
+    _reject_buffer(edge_letters, method.EDGE_BUFFER_LETTERS, "edge")
+    _reject_buffer(corner_letters, method.CORNER_BUFFER_LETTERS, "corner")
     steps = [(f"Edges {l}", method.EDGE_ALG[l]) for l in edge_letters]
     if parity_number is not None:
         steps.append(("Parity", PARITY_ALGS[parity_number]))
@@ -62,9 +64,7 @@ def _piece_names(kind, wrong):
 
 def check(scrambled_state, steps):
     """Execute ``steps`` on a copy of the scrambled state and report."""
-    state = scrambled_state
-    for _, alg in steps:
-        state = apply_alg(state, alg)
+    state = apply_algs(scrambled_state, (alg for _, alg in steps))
     wrong_e = _wrong_stickers(state, EDGE)
     wrong_c = _wrong_stickers(state, CORNER)
 

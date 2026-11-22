@@ -9,6 +9,7 @@ Face turns only spin their own center in place; slice moves (M) move centers.
 Nothing in this module mutates a state: every operation returns a new tuple.
 """
 import random
+from functools import lru_cache
 
 from .constants import CENTER_NAMES, CORNER_NAMES, EDGE_NAMES, LETTERS
 
@@ -16,7 +17,7 @@ EDGE, CORNER = "edge", "corner"
 OFFSET = {EDGE: 0, CORNER: 24}
 CENTER_OFFSET = 48
 
-FACE_VECTORS = _FACE = {
+FACE_VECTORS = {
     "U": (0, 1, 0), "D": (0, -1, 0),
     "R": (1, 0, 0), "L": (-1, 0, 0),
     "F": (0, 0, 1), "B": (0, 0, -1),
@@ -25,8 +26,8 @@ FACE_VECTORS = _FACE = {
 
 def _slot(name):
     """(position vector, normal vector) of a sticker named like 'UBL'."""
-    pos = tuple(sum(_FACE[c][i] for c in name) for i in range(3))
-    return pos, _FACE[name[0]]
+    pos = tuple(sum(FACE_VECTORS[c][i] for c in name) for i in range(3))
+    return pos, FACE_VECTORS[name[0]]
 
 
 _NAMES = {EDGE: EDGE_NAMES, CORNER: CORNER_NAMES}
@@ -56,9 +57,7 @@ def slot_index(kind, letter):
 def piece_of(kind, letter):
     """Letters of all stickers that belong to the same cubie as ``letter``."""
     pos = SLOTS[slot_index(kind, letter)][0]
-    return frozenset(
-        l for l in LETTERS if SLOTS[slot_index(kind, l)][0] == pos
-    )
+    return frozenset(l for l in LETTERS if SLOTS[slot_index(kind, l)][0] == pos)
 
 
 # --- moves -----------------------------------------------------------------
@@ -99,7 +98,9 @@ def _compose(first, second):
     return tuple(first[s] for s in second)
 
 
+@lru_cache(maxsize=None)
 def _move_perm(token):
+    """Slot permutation of one move token such as "R", "U'" or "M2"."""
     face, suffix = token[0], token[1:]
     if face not in _QUARTER or suffix not in ("", "'", "2"):
         raise ValueError(f"bad move: {token!r}")
@@ -108,29 +109,29 @@ def _move_perm(token):
     return {"": q, "2": q2, "'": _compose(q2, q)}[suffix]
 
 
-_MOVE_CACHE = {}
-
-
 def apply_alg(state, alg):
     """Return a new state with ``alg`` (space separated moves) applied."""
     for token in alg.split():
-        perm = _MOVE_CACHE.get(token)
-        if perm is None:
-            perm = _MOVE_CACHE[token] = _move_perm(token)
+        perm = _move_perm(token)
         state = tuple(state[s] for s in perm)
     return state
 
 
+def apply_algs(state, algs):
+    """Return a new state with every algorithm in ``algs`` applied in order."""
+    for alg in algs:
+        state = apply_alg(state, alg)
+    return state
+
+
+def _invert_move(token):
+    if token.endswith("2"):
+        return token
+    return token[:-1] if token.endswith("'") else token + "'"
+
+
 def invert_alg(alg):
-    out = []
-    for t in reversed(alg.split()):
-        if t.endswith("2"):
-            out.append(t)
-        elif t.endswith("'"):
-            out.append(t[:-1])
-        else:
-            out.append(t + "'")
-    return " ".join(out)
+    return " ".join(_invert_move(t) for t in reversed(alg.split()))
 
 
 # --- state helpers ---------------------------------------------------------

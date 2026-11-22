@@ -14,8 +14,8 @@ from typing import Optional, Tuple
 
 from . import method
 from .constants import (DEFAULT_PARITY, LABEL_CORNERS, LABEL_EDGES, LABEL_PARITY,
-                        LABEL_SOLVED)
-from .cube import (CORNER, EDGE, LETTERS, apply_alg, home_letter, is_solved,
+                        LABEL_SOLVED, LETTERS)
+from .cube import (CORNER, EDGE, apply_alg, apply_algs, home_letter, is_solved,
                    piece_of, piece_solved, solved_state)
 
 
@@ -100,13 +100,17 @@ class Solution:
     def corner_memo(self):
         return tuple(s.memo_letter for s in self.corners)
 
+    def labelled_steps(self):
+        """[(label, algorithm), ...] in execution order, e.g. ("Edges F", "B L2 B' M2 B L2 B'")."""
+        steps = [(f"Edges {s.memo_letter}", s.algorithm) for s in self.edges]
+        if self.parity_algorithm:
+            steps.append(("Parity", self.parity_algorithm))
+        steps += [(f"Corners {s.memo_letter}", s.algorithm) for s in self.corners]
+        return steps
+
     def algorithms(self):
         """Every algorithm in execution order."""
-        out = [s.algorithm for s in self.edges]
-        if self.parity_algorithm:
-            out.append(self.parity_algorithm)
-        out += [s.algorithm for s in self.corners]
-        return out
+        return [alg for _, alg in self.labelled_steps()]
 
 
 def solve(scrambled_state, parity_number=DEFAULT_PARITY) -> Solution:
@@ -116,9 +120,7 @@ def solve(scrambled_state, parity_number=DEFAULT_PARITY) -> Solution:
     edges = tuple(Step(m, e, method.EDGE_ALG[e]) for m, e in zip(edge_memo, edge_exec))
 
     # Memo-working state: what the cube looks like when the corners begin.
-    working = scrambled_state
-    for step in edges:
-        working = apply_alg(working, step.algorithm)
+    working = apply_algs(scrambled_state, (s.algorithm for s in edges))
     parity_alg = None
     if len(edge_memo) % 2 == 1:
         parity_alg = method.PARITY_ALGS[parity_number]
@@ -131,9 +133,7 @@ def solve(scrambled_state, parity_number=DEFAULT_PARITY) -> Solution:
 
 def verify(scramble, solution) -> bool:
     """Independently execute the printed algorithms on a fresh cube."""
-    state = apply_alg(solved_state(), scramble)
-    for alg in solution.algorithms():
-        state = apply_alg(state, alg)
+    state = apply_algs(apply_alg(solved_state(), scramble), solution.algorithms())
     return is_solved(state)
 
 

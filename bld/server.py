@@ -15,13 +15,22 @@ from .solver import format_solution, pair_up, solve, verify
 WEB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web")
 
 
-def build_payload(scramble=None, seed=None, parity=DEFAULT_PARITY):
-    """Everything the page needs for one scramble.  Raises ValueError on bad input."""
+def _check_parity(parity):
     if parity not in PARITY_ALGS:
         raise ValueError(f"parity must be one of {sorted(PARITY_ALGS)}")
+
+
+def _clean(scramble):
+    """Scramble with runs of whitespace collapsed to single spaces."""
+    return " ".join(scramble.split())
+
+
+def build_payload(scramble=None, seed=None, parity=DEFAULT_PARITY):
+    """Everything the page needs for one scramble.  Raises ValueError on bad input."""
+    _check_parity(parity)
     if not scramble or not scramble.strip():
         scramble = random_scramble(rng=random.Random(seed))
-    scramble = " ".join(scramble.split())
+    scramble = _clean(scramble)
     state = apply_alg(solved_state(), scramble)
     solution = solve(state, parity_number=parity)
     return {
@@ -33,26 +42,17 @@ def build_payload(scramble=None, seed=None, parity=DEFAULT_PARITY):
         "corner_memo": pair_up(solution.corner_memo),
         "solution": format_solution(solution),
         "verified": verify(scramble, solution),
-        "frames": solving_frames(state, solution),
+        "frames": frames_for(state, solution.labelled_steps()),
     }
-
-
-def solving_frames(state, solution):
-    """Cube after every single move of the solution, in execution order."""
-    labelled = [(f"Edges {s.memo_letter}", s.algorithm) for s in solution.edges]
-    if solution.parity_algorithm:
-        labelled.append(("Parity", solution.parity_algorithm))
-    labelled += [(f"Corners {s.memo_letter}", s.algorithm) for s in solution.corners]
-    return frames_for(state, labelled)
 
 
 def check_payload(scramble, edges, corners, parity_number=None):
     """Run the user's typed solution on the scramble.  Raises ValueError on bad input."""
     if not scramble or not scramble.strip():
         raise ValueError("no scramble")
-    if parity_number is not None and parity_number not in PARITY_ALGS:
-        raise ValueError(f"parity must be one of {sorted(PARITY_ALGS)}")
-    state = apply_alg(solved_state(), " ".join(scramble.split()))
+    if parity_number is not None:
+        _check_parity(parity_number)
+    state = apply_alg(solved_state(), _clean(scramble))
     steps = user_steps(edges, corners, parity_number)
     result = check(state, steps)
     result["edges"] = normalize(edges)
@@ -72,6 +72,20 @@ def frames_for(state, labelled):
     return frames
 
 
+def _api_cube(first):
+    seed = first("seed")
+    return build_payload(first("scramble", None), int(seed) if seed else None,
+                         int(first("parity", DEFAULT_PARITY)))
+
+
+def _api_check(first):
+    parity = int(first("parity_alg", DEFAULT_PARITY)) if first("parity") == "1" else None
+    return check_payload(first("scramble"), first("edges"), first("corners"), parity)
+
+
+API = {"/api/cube": _api_cube, "/api/check": _api_check}
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send(self, code, body, content_type):
         data = body if isinstance(body, bytes) else body.encode("utf-8")
@@ -81,33 +95,26 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _send_json(self, code, obj):
+        self._send(code, json.dumps(obj), "application/json")
+
     def do_GET(self):
         url = urlparse(self.path)
         if url.path in ("/", "/index.html"):
             with open(os.path.join(WEB_DIR, "index.html"), "rb") as f:
                 self._send(200, f.read(), "text/html; charset=utf-8")
-        elif url.path == "/api/cube":
-            q = parse_qs(url.query)
-            try:
-                seed = int(q["seed"][0]) if q.get("seed") and q["seed"][0] else None
-                payload = build_payload(q.get("scramble", [None])[0], seed,
-                                        int(q.get("parity", [DEFAULT_PARITY])[0]))
-            except (ValueError, KeyError) as e:
-                self._send(400, json.dumps({"error": str(e)}), "application/json")
-                return
-            self._send(200, json.dumps(payload), "application/json")
-        elif url.path == "/api/check":
-            q = parse_qs(url.query)
-            first = lambda k, d="": q.get(k, [d])[0]
-            try:
-                parity = int(first("parity_alg", DEFAULT_PARITY)) if first("parity") == "1" else None
-                payload = check_payload(first("scramble"), first("edges"), first("corners"), parity)
-            except (ValueError, KeyError) as e:
-                self._send(400, json.dumps({"error": str(e)}), "application/json")
-                return
-            self._send(200, json.dumps(payload), "application/json")
-        else:
+            return
+        endpoint = API.get(url.path)
+        if endpoint is None:
             self._send(404, "not found", "text/plain")
+            return
+        query = parse_qs(url.query)
+        try:
+            payload = endpoint(lambda key, default="": query.get(key, [default])[0])
+        except (ValueError, KeyError) as e:
+            self._send_json(400, {"error": str(e)})
+            return
+        self._send_json(200, payload)
 
     def log_message(self, *args):
         pass

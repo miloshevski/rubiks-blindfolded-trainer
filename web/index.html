@@ -94,6 +94,8 @@
   .rail section { padding: 18px 20px 20px; border-bottom: 1px solid var(--rule); }
   .rail section:last-child { border-bottom: 0; }
   .shead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .shead.tight { margin-bottom: 4px; }
+  .hint { font-size: 12px; color: var(--ink-3); }
   .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
     padding: 10px 20px; min-height: 53px; border-bottom: 1px solid var(--rule); }
   .bar .l { display: flex; align-items: baseline; gap: 10px; }
@@ -105,6 +107,7 @@
   .letters { display: flex; flex-wrap: wrap; gap: 4px 14px; font: 500 22px/30px var(--mono); letter-spacing: .06em; }
   .letters .x { text-decoration: underline dotted var(--ink-3); text-underline-offset: 6px; text-decoration-thickness: 1.5px; }
   .letters .none { color: var(--ink-3); font-size: 14px; letter-spacing: 0; }
+  .letters .with-pill { display: inline-flex; align-items: center; gap: 8px; }
   .pill { font: 500 10px/16px var(--mono); letter-spacing: .04em; color: var(--ink-2); border: 1px solid #34373c;
     border-radius: 3px; padding: 0 5px; align-self: center; }
   .caption { margin: 6px 0 0; font-size: 11.5px; color: var(--ink-3); }
@@ -206,6 +209,7 @@
   .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 20px; border-bottom: 1px solid var(--rule-soft);
     font-size: 11.5px; color: var(--ink-3); }
   .legend > span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .undo { color: var(--ink-2); }
   #solution { flex: 1 1 auto; overflow: auto; padding: 6px 0 16px; }
   .sec { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 16px 20px 6px; }
   .sec:first-child { padding-top: 12px; }
@@ -322,7 +326,7 @@
       </div>
     </section>
     <section data-tab="check">
-      <div class="shead" style="margin-bottom: 4px"><h2>Recall check</h2><span class="meta">letters as executed</span></div>
+      <div class="shead tight"><h2>Recall check</h2><span class="meta">letters as executed</span></div>
       <form id="practice" class="pform" autocomplete="off">
         <div class="f"><label for="p-edges">Edges</label>
           <input class="field" type="text" id="p-edges" placeholder="e.g. hs ef bo sa gn p" spellcheck="false"></div>
@@ -342,9 +346,9 @@
 
   <section class="stage-col">
     <div class="bar">
-      <div class="l"><h2>Cube</h2><span style="font-size: 12px; color: var(--ink-3)">Drag to rotate · hidden faces float behind</span></div>
+      <div class="l"><h2>Cube</h2><span class="hint">Drag to rotate · hidden faces float behind</span></div>
       <div class="r">
-        <span id="letters-l" style="font-size: 12px; color: var(--ink-3)">Letters</span>
+        <span id="letters-l" class="hint">Letters</span>
         <div class="seg" id="letter-mode" role="group" aria-labelledby="letters-l">
           <button type="button" data-v="off">Off</button>
           <button type="button" data-v="absolute">Absolute</button>
@@ -404,7 +408,7 @@
     <div class="legend">
       <span><span class="mono">R U</span> setup</span>
       <span><span class="mono tk core">M2</span> swap</span>
-      <span><span class="mono" style="color: var(--ink-2)">U' R'</span> undo</span>
+      <span><span class="mono undo">U' R'</span> undo</span>
       <span><span class="mono">B L</span> played</span>
     </div>
     <div id="solution"></div>
@@ -416,6 +420,7 @@ const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
                 set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const cubeEl = $('cube');
 const COLORS = { U: 'var(--U)', D: 'var(--D)', F: 'var(--F)', B: 'var(--B)', R: 'var(--R)', L: 'var(--L)' };
 const DARK_STICKERS = 'FBR';          // green, blue, red get light text
 const Y_PERM = "R U' R' U' R U R' F' R U R' U' R' F R";
@@ -460,7 +465,7 @@ for (const x of [-1, 0, 1]) for (const y of [-1, 0, 1]) for (const z of [-1, 0, 
     if ({ x, y, z }[axis] === dir) stickers[face] = side.appendChild(el('i'));
     c.appendChild(side);
   }
-  $('cube').appendChild(c);
+  cubeEl.appendChild(c);
   cubies.push({ el: c, x, y, z, stickers });
 }
 // Floating face copies: same rotation as the face, pushed out, then flipped to face the cube.
@@ -471,7 +476,7 @@ for (const face of 'UDFBRL') {
   const g = el('div', 'ghost' + ('UD'.includes(face) ? ' turn-text' : ''));
   g.style.transform = `${GHOST_ROT[face]} translateZ(calc(${GHOST_OFFSET} * var(--c))) rotateY(180deg)`;
   ghosts[face] = Array.from({ length: 9 }, () => g.appendChild(el('i')));
-  $('cube').appendChild(g);
+  cubeEl.appendChild(g);
 }
 
 // Sticker lettering (display only): absolute = letter of the position,
@@ -520,7 +525,7 @@ function animateMove(move, ms) {
   const [axis, quarter, inLayer] = TURNS[move[0]];
   const angle = quarter * (move.endsWith('2') ? 2 : move.endsWith("'") ? -1 : 1);
   const layer = el('div', 'layer');
-  $('cube').appendChild(layer);
+  cubeEl.appendChild(layer);
   const moving = cubies.filter(inLayer);
   for (const c of moving) layer.appendChild(c.el);
   return new Promise(resolve => {
@@ -529,7 +534,7 @@ function animateMove(move, ms) {
     const finish = () => {
       if (done) return;
       done = true;
-      for (const c of moving) $('cube').appendChild(c.el);
+      for (const c of moving) cubeEl.appendChild(c.el);
       layer.remove();
       resolve();
     };
@@ -550,7 +555,7 @@ const ROT0 = [-25, -35];
 let [rotX, rotY] = ROT0;
 const fmtDeg = v => `${Math.round(v) < 0 ? '−' : ''}${Math.abs(Math.round(v))}°`;
 function applyRotation() {
-  $('cube').style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+  cubeEl.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
   $('rot-readout').innerHTML = `rx ${fmtDeg(rotX)}<br>ry ${fmtDeg(((rotY + 180) % 360 + 360) % 360 - 180)}`;
 }
 (() => {
@@ -693,7 +698,7 @@ function renderMemo() {
   fill($('memo-corners'), current.corner_memo, []);
   if (hasParity) {
     const last = $('memo-edges').lastElementChild;
-    last.style.cssText = 'display:inline-flex;align-items:center;gap:8px';
+    last.classList.add('with-pill');
     last.appendChild(el('span', 'pill', 'PARITY'));
   }
   const note = $('memo-note'); note.replaceChildren();
@@ -820,9 +825,10 @@ onSeg('speed', v => store.set('bld.speed', v));
 })();
 
 // ---------- recall check: a solution typed by the user (letters exactly as executed) ----------
+const mineButton = $('source').querySelector('[data-v=mine]');
 function resetPractice() {
   practice = null; $('p-render').disabled = true; $('p-result').replaceChildren();
-  $('source').querySelector('[data-v=mine]').disabled = true;
+  mineButton.disabled = true;
   $('p-corners').removeAttribute('aria-invalid'); $('p-edges').removeAttribute('aria-invalid');
   if (source === 'mine') switchSource('ref');
 }
@@ -841,7 +847,7 @@ $('practice').addEventListener('submit', async e => {
   const out = $('p-result');
   if (!res.ok) { out.innerHTML = `<div class="verdict bad">${ICON_BAD}</div>`; out.firstChild.append(data.error); return; }
   practice = data; $('p-render').disabled = false;
-  $('source').querySelector('[data-v=mine]').disabled = false;
+  mineButton.disabled = false;
   const v = el('div', 'verdict ' + (data.correct ? 'ok' : 'bad'));
   v.innerHTML = data.correct ? ICON_OK : ICON_BAD; v.append(data.correct ? 'Correct: the cube is solved' : 'Not solved');
   const dl = el('dl', 'res');

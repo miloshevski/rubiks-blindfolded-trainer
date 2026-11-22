@@ -15,20 +15,15 @@ FACES = "URFDLB"
 _FACE_OF_NORMAL = {v: k for k, v in FACE_VECTORS.items()}
 
 
-def _cell(face, pos):
-    """(row, col) in the 3x3 grid of ``face`` for a sticker at ``pos``."""
-    x, y, z = pos
-    if face == "U":
-        return 1 + z, 1 + x
-    if face == "D":
-        return 1 - z, 1 + x
-    if face == "F":
-        return 1 - y, 1 + x
-    if face == "B":
-        return 1 - y, 1 - x
-    if face == "R":
-        return 1 - y, 1 - z
-    return 1 - y, 1 + z            # L
+# (row, col) in the 3x3 grid of a face for a sticker at position (x, y, z).
+_CELL = {
+    "U": lambda x, y, z: (1 + z, 1 + x),
+    "D": lambda x, y, z: (1 - z, 1 + x),
+    "F": lambda x, y, z: (1 - y, 1 + x),
+    "B": lambda x, y, z: (1 - y, 1 - x),
+    "R": lambda x, y, z: (1 - y, 1 - z),
+    "L": lambda x, y, z: (1 - y, 1 + z),
+}
 
 
 def _grids(state, value):
@@ -37,7 +32,7 @@ def _grids(state, value):
     for slot, home in enumerate(state):
         pos, normal = SLOTS[slot]
         face = _FACE_OF_NORMAL[normal]
-        row, col = _cell(face, pos)
+        row, col = _CELL[face](*pos)
         grids[face][row][col] = value(home)
     return {f: "".join("".join(r) for r in g) for f, g in grids.items()}
 
