@@ -14,7 +14,7 @@ from .constants import CORNER_NAMES, EDGE_NAMES, LETTERS
 EDGE, CORNER = "edge", "corner"
 OFFSET = {EDGE: 0, CORNER: 24}
 
-_FACE = {
+FACE_VECTORS = _FACE = {
     "U": (0, 1, 0), "D": (0, -1, 0),
     "R": (1, 0, 0), "L": (-1, 0, 0),
     "F": (0, 0, 1), "B": (0, 0, -1),
