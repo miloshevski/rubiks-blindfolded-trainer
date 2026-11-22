@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bld-server",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "bld.server"],
+      "port": 8000
+    }
+  ]
+}
