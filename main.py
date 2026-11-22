@@ -3,6 +3,7 @@ import argparse
 import random
 import sys
 
+from bld.constants import DEFAULT_PARITY, PARITY_ALGS
 from bld.cube import apply_alg, random_scramble, solved_state
 from bld.solver import format_solution, pair_up, solve, verify
 
@@ -11,8 +12,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--scramble", help="scramble to use instead of a random one")
     ap.add_argument("--seed", type=int, help="seed for the random scramble")
-    ap.add_argument("--parity", type=int, choices=(1, 2), default=1,
-                    help="which parity algorithm to use when needed (default 1)")
+    ap.add_argument("--parity", type=int, choices=sorted(PARITY_ALGS), default=DEFAULT_PARITY,
+                    help="which parity algorithm to use when needed (default %(default)s)")
     args = ap.parse_args(argv)
 
     scramble = args.scramble or random_scramble(rng=random.Random(args.seed))

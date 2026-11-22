@@ -9,19 +9,10 @@ Nothing in this module mutates a state: every operation returns a new tuple.
 """
 import random
 
-LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWX"
+from .constants import CORNER_NAMES, EDGE_NAMES, LETTERS
+
 EDGE, CORNER = "edge", "corner"
 OFFSET = {EDGE: 0, CORNER: 24}
-
-# Speffz lettering from RUBIKS_SKILL.md, in letter order A..X.
-# (The B-face edge row is R=BL, T=BR; see the skill's edge-table note.)
-EDGE_NAMES = (
-    "UB UR UF UL  LU LF LD LB  FU FR FD FL  RU RB RD RF  BU BL BD BR  DF DR DB DL"
-).split()
-CORNER_NAMES = (
-    "UBL UBR UFR UFL  LUB LUF LDF LDB  FUL FUR FDR FDL  RUF RUB RDB RDF  "
-    "BUR BUL BDL BDR  DFL DFR DBR DBL"
-).split()
 
 _FACE = {
     "U": (0, 1, 0), "D": (0, -1, 0),

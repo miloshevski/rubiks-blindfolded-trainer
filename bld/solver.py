@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from . import method
+from .constants import (DEFAULT_PARITY, LABEL_CORNERS, LABEL_EDGES, LABEL_PARITY,
+                        LABEL_SOLVED)
 from .cube import (CORNER, EDGE, LETTERS, apply_alg, home_letter, is_solved,
                    piece_of, piece_solved, solved_state)
 
@@ -107,7 +109,7 @@ class Solution:
         return out
 
 
-def solve(scrambled_state, parity_number=1) -> Solution:
+def solve(scrambled_state, parity_number=DEFAULT_PARITY) -> Solution:
     """Generate the full blindfold solution for ``scrambled_state``."""
     edge_memo = trace_cycles(scrambled_state, EDGE)
     edge_exec = edge_execution_letters(edge_memo)
@@ -141,17 +143,17 @@ def pair_up(letters):
 
 
 def format_solution(solution) -> str:
-    lines = ["Edges:"]
+    lines = [LABEL_EDGES]
     if not solution.edges:
-        lines.append("(already solved)")
+        lines.append(LABEL_SOLVED)
     for s in solution.edges:
         note = f"   # executed as {s.exec_letter}" if s.exec_letter != s.memo_letter else ""
         lines.append(f"{s.memo_letter}: {s.algorithm}{note}")
     if solution.parity_algorithm:
-        lines += ["Parity:", f"{solution.parity_algorithm}"]
-    lines.append("Corners:")
+        lines += [LABEL_PARITY, solution.parity_algorithm]
+    lines.append(LABEL_CORNERS)
     if not solution.corners:
-        lines.append("(already solved)")
+        lines.append(LABEL_SOLVED)
     for s in solution.corners:
         lines.append(f"{s.memo_letter}: {s.algorithm}")
     return "\n".join(lines)
