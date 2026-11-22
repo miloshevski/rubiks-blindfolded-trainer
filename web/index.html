@@ -225,7 +225,7 @@ async function play(frames, button, doneText) {
   if (simButton) stopSim('Stopped');
   if (pressedStop || !current) return;
   if (!frames) { $('simstatus').textContent = 'Server is outdated: restart python3 -m bld.server'; return; }
-  draw3d(current.facelets);
+  draw3d(current.facelets); drawNet(current.facelets);
   if (!frames.length) { $('simstatus').textContent = 'No moves to play'; return; }
   const token = ++playToken;
   simButton = button; button.textContent = 'Stop';
@@ -234,6 +234,7 @@ async function play(frames, button, doneText) {
     $('simstatus').textContent = `${f.label}: ${f.move}  (${i + 1}/${frames.length})`;
     await animateMove(f.move, TURN_MS);
     draw3d(f.facelets);                       // snap to the exact state after this move
+    drawNet(f.facelets);                      // keep the 2D net in step with the 3D cube
     if (token !== playToken) return;
     await sleep(MOVE_MS - TURN_MS);
     if (token !== playToken) return;
