@@ -42,6 +42,12 @@
   .cubie > .L { transform: rotateY(-90deg) translateZ(calc(var(--c) / 2)); }
   .cubie > .U { transform: rotateX(90deg) translateZ(calc(var(--c) / 2)); }
   .cubie > .D { transform: rotateX(-90deg) translateZ(calc(var(--c) / 2)); }
+  /* Floating copies of each face, set off from the cube and facing it, so only the
+     faces hidden behind the cube show through (exploded-cube view). Display only. */
+  .ghost { position: absolute; inset: 0; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+    backface-visibility: hidden; pointer-events: none; opacity: .72; }
+  .ghost i { margin: 5px; border-radius: 4px; }
+  .stage { height: 420px; }
   .hint { color: var(--muted); font-size: 12px; text-align: center; margin: 6px 0 0; }
   .wide { grid-column: 1 / -1; }
   pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 13px/1.5 ui-monospace, monospace; }
@@ -136,10 +142,25 @@ const cubies = [];
   }
 })();
 
+// Floating face copies: same rotation as the face, pushed out, then flipped to face the cube.
+const GHOST_OFFSET = 2.4;   // distance from the cube center, in cubie sizes
+const GHOST_ROT = { F: '', B: 'rotateY(180deg)', R: 'rotateY(90deg)', L: 'rotateY(-90deg)', U: 'rotateX(90deg)', D: 'rotateX(-90deg)' };
+const ghosts = {};
+for (const face of 'UDFBRL') {
+  const g = document.createElement('div'); g.className = 'ghost';
+  g.style.transform = `${GHOST_ROT[face]} translateZ(${GHOST_OFFSET * CUBIE_PX}px) rotateY(180deg)`;
+  ghosts[face] = Array.from({ length: 9 }, () => g.appendChild(document.createElement('i')));
+  $('cube').appendChild(g);
+}
+
 function draw3d(f) {
   for (const c of cubies)
     for (const [face, sticker] of Object.entries(c.stickers))
       sticker.style.background = COLORS[f[face][CELL[face](c.x, c.y, c.z)]];
+  // The flip mirrors columns, so column c of the face goes to grid column 2 - c.
+  for (const face of 'UDFBRL')
+    for (let i = 0; i < 9; i++)
+      ghosts[face][Math.floor(i / 3) * 3 + (2 - i % 3)].style.background = COLORS[f[face][i]];
 }
 
 // Layer turns.  CSS axes: X right, Y down, Z towards the viewer.
