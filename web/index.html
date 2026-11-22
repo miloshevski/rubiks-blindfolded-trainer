@@ -273,6 +273,55 @@
     main[data-active=solution] [data-tab=solution] { display: flex !important; }
     .rail section { border-bottom: 0; }
   }
+
+  /* ---------- letter drill mode ---------- */
+  .drill { grid-area: drill; display: none; min-width: 0; flex-direction: column; }
+  body[data-mode=drill] #form, body[data-mode=drill] .parity, body[data-mode=drill] #msg,
+  body[data-mode=drill] .rail, body[data-mode=drill] .sheet, body[data-mode=drill] .tabs,
+  body[data-mode=drill] .transport, body[data-mode=drill] .now,
+  body[data-mode=drill] #letter-mode, body[data-mode=drill] #letters-l { display: none !important; }
+  body[data-mode=drill] .drill { display: flex; }
+  body[data-mode=drill] main { grid-template-columns: minmax(0, 1fr) minmax(360px, 520px); grid-template-areas: "stage drill"; }
+  body[data-mode=drill] .stage-col { border-bottom: 0; }
+  .drill-body { padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; overflow: auto; }
+  .prompt { display: flex; align-items: center; gap: 20px; }
+  #drill-answer { width: 96px; height: 96px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--edge); border-radius: 6px; font: 500 52px/1 var(--mono); color: var(--ink-3); }
+  #drill-answer.ok { color: var(--ok); border-color: var(--ok); }
+  #drill-answer.bad { color: var(--bad); border-color: var(--bad-edge); }
+  .prompt .what { font-size: 15px; font-weight: 500; margin: 2px 0 6px; }
+  #drill-feedback { margin: 0; font: 12.5px var(--mono); color: var(--ink-2); min-height: 1.45em; }
+  #drill-feedback.ok { color: var(--ok); } #drill-feedback.bad { color: var(--bad); }
+  .keys { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .keys button { height: 40px; border: 1px solid var(--edge); border-radius: 4px; background: var(--raise); color: var(--ink);
+    font: 500 15px var(--mono); cursor: pointer; transition: background .12s, border-color .12s; }
+  .keys button:hover { background: var(--raise-2); border-color: var(--edge-2); }
+  .keys button.ok { border-color: var(--ok); color: var(--ok); }
+  .keys button.bad { border-color: var(--bad-edge); color: var(--bad); }
+  .drill-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0;
+    padding-top: 18px; border-top: 1px solid var(--rule); }
+  .drill-stats div { display: flex; flex-direction: column; gap: 2px; }
+  .drill-stats dt { font-size: 11.5px; color: var(--ink-3); }
+  .drill-stats dd { margin: 0; font: 500 20px var(--mono); }
+  .drill-stats dd small { font-size: 11px; color: var(--ink-3); font-weight: 400; }
+  .history { display: flex; flex-wrap: wrap; gap: 4px; min-height: 24px; }
+  .history span { min-width: 24px; height: 24px; padding: 0 4px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 3px; border: 1px solid #26282b; font: 600 12px var(--mono); }
+  .history span.ok { color: var(--ok); } .history span.bad { color: var(--bad); border-color: var(--bad-edge); }
+  .drill-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  /* the blinking target sticker (on the cube and on its floating copy) */
+  @keyframes drill-blink { 50% { filter: brightness(.3); } }
+  .drill-target, .drill-ok, .drill-bad { box-shadow: inset 0 0 0 2px #0c0d0e, inset 0 0 0 5px var(--accent); }
+  .drill-target { animation: drill-blink .8s ease-in-out infinite; }
+  .drill-ok { box-shadow: inset 0 0 0 2px #0c0d0e, inset 0 0 0 5px var(--ok); }
+  .drill-bad { box-shadow: inset 0 0 0 2px #0c0d0e, inset 0 0 0 5px var(--bad); }
+  @media (prefers-reduced-motion: reduce) { .drill-target { animation: none; } }
+  @media (max-width: 759px) {
+    body[data-mode=drill] main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "stage" "drill"; }
+    .drill-body { padding: 16px; }
+    .keys button { height: 44px; }
+    .drill-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
 </style>
 </head>
 <body>
@@ -280,6 +329,10 @@
   <div class="brand">
     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="1" width="4.4" height="4.4" rx=".8"/><rect x="6.8" y="1" width="4.4" height="4.4" rx=".8"/><rect x="12.6" y="1" width="4.4" height="4.4" rx=".8"/><rect x="1" y="6.8" width="4.4" height="4.4" rx=".8"/><rect x="12.6" y="6.8" width="4.4" height="4.4" rx=".8"/><rect x="1" y="12.6" width="4.4" height="4.4" rx=".8"/><rect x="6.8" y="12.6" width="4.4" height="4.4" rx=".8"/><rect x="12.6" y="12.6" width="4.4" height="4.4" rx=".8"/></g><rect x="6.8" y="6.8" width="4.4" height="4.4" rx=".8" fill="var(--accent)"/></svg>
     <b>Blindfold Trainer</b><span class="tag">M2 / OP</span>
+  </div>
+  <div class="seg" id="mode" role="group" aria-label="Mode">
+    <button type="button" data-v="solve" aria-pressed="true">Solve</button>
+    <button type="button" data-v="drill" aria-pressed="false">Letter drill</button>
   </div>
   <form id="form">
     <label for="scramble">Scramble</label>
@@ -413,6 +466,44 @@
     </div>
     <div id="solution"></div>
   </section>
+
+  <section class="drill" aria-label="Letter drill">
+    <div class="bar">
+      <div class="l"><h2>Letter drill</h2><span class="meta">type the letter of the blinking sticker</span></div>
+      <div class="r">
+        <div class="seg" id="drill-set" role="group" aria-label="Stickers to drill">
+          <button type="button" data-v="edges">Edges</button>
+          <button type="button" data-v="corners">Corners</button>
+          <button type="button" data-v="both">Both</button>
+        </div>
+      </div>
+    </div>
+    <div class="drill-body">
+      <div class="prompt">
+        <div id="drill-answer" aria-hidden="true">?</div>
+        <div>
+          <span class="meta" id="drill-kind"></span>
+          <p class="what">Which letter is blinking?</p>
+          <p id="drill-feedback" aria-live="assertive"></p>
+        </div>
+      </div>
+      <div class="keys" id="keys" aria-label="Answer letters"></div>
+      <dl class="drill-stats">
+        <div><dt>Correct</dt><dd id="st-correct">0<small> / 0</small></dd></div>
+        <div><dt>Accuracy</dt><dd id="st-acc">–</dd></div>
+        <div><dt>Streak</dt><dd id="st-streak">0<small> best 0</small></dd></div>
+        <div><dt>Avg time</dt><dd id="st-time">–</dd></div>
+      </dl>
+      <div>
+        <div class="shead"><h3>Recent</h3><span class="meta">newest first</span></div>
+        <div class="history" id="drill-history"></div>
+      </div>
+      <div class="drill-foot">
+        <span class="meta">Type A–X · space or ↵ skips the wait after a miss</span>
+        <button type="button" class="btn sm" id="drill-reset">Reset stats</button>
+      </div>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -478,13 +569,20 @@ for (const face of 'UDFBRL') {
   ghosts[face] = Array.from({ length: 9 }, () => g.appendChild(el('i')));
   cubeEl.appendChild(g);
 }
+// Every element that shows sticker (face, i): the cube sticker and its floating copy.
+const stickerEls = {};
+for (const c of cubies)
+  for (const [face, sticker] of Object.entries(c.stickers)) {
+    const i = CELL[face](c.x, c.y, c.z);
+    stickerEls[face + i] = [sticker, ghosts[face][Math.floor(i / 3) * 3 + (2 - i % 3)]];
+  }
 
 // Sticker lettering (display only): absolute = letter of the position,
 // relative = letter of the physical sticker (sent by the server for each state).
-let absoluteLetters = null, shown = null;
+let absoluteLetters = null, shown = null, appMode = 'solve';
 function letterFor(view, face, i) {
   const mode = segValue('letter-mode');
-  if (mode === 'off') return '';
+  if (mode === 'off' || appMode === 'drill') return '';
   const src = mode === 'absolute' ? absoluteLetters : view.letters;
   const ch = src && src[face][i];
   return ch && ch !== '.' ? ch : '';
@@ -510,7 +608,7 @@ function draw(view) {
 }
 function showMode() {
   const m = segValue('letter-mode');
-  $('mode-readout').textContent = m === 'off' ? 'letters off' : `${m} letters`;
+  $('mode-readout').textContent = appMode === 'drill' ? 'letters hidden' : m === 'off' ? 'letters off' : `${m} letters`;
 }
 onSeg('letter-mode', v => { store.set('bld.letters', v); showMode(); shown && draw(shown); });
 showMode();
@@ -906,17 +1004,107 @@ document.querySelector('.tabs').addEventListener('click', e => {
   for (const t of document.querySelectorAll('.tabs button')) t.setAttribute('aria-selected', String(t === b));
 });
 
+// ---------- letter drill: a random sticker blinks, type its letter ----------
+const drill = { target: null, prev: null, answered: false, shownAt: 0, timer: 0,
+                n: 0, ok: 0, streak: 0, best: 0, ms: 0, history: [] };
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWX';
+const keyButtons = {};
+for (const l of LETTERS) {
+  const b = el('button', null, l); b.type = 'button'; b.setAttribute('aria-label', `Answer ${l}`);
+  b.addEventListener('click', () => drillAnswer(l));
+  keyButtons[l] = $('keys').appendChild(b);
+}
+setSeg('drill-set', store.get('bld.drillSet', 'both'));
+const solvedView = () => ({ facelets: Object.fromEntries([...'URFDLB'].map(f => [f, f.repeat(9)])), letters: absoluteLetters });
+
+function clearDrillMarks() {
+  for (const els of Object.values(stickerEls))
+    for (const e of els) e.classList.remove('drill-target', 'drill-ok', 'drill-bad');
+  for (const b of Object.values(keyButtons)) b.classList.remove('ok', 'bad');
+}
+// Next random sticker (corners sit at even indexes, edges at odd; 4 is the center), never the same one twice in a row.
+function drillNext() {
+  clearTimeout(drill.timer);
+  if (!absoluteLetters) return;
+  const set = segValue('drill-set');
+  const pool = [];
+  for (const face of 'URFDLB') for (let i = 0; i < 9; i++) {
+    if (i === 4) continue;
+    const kind = i % 2 ? 'edge' : 'corner';
+    if (set !== 'both' && set !== kind + 's') continue;
+    if (face + i !== drill.prev) pool.push({ face, i, kind, letter: absoluteLetters[face][i] });
+  }
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  drill.target = t; drill.prev = t.face + t.i; drill.answered = false; drill.shownAt = performance.now();
+  draw(solvedView());
+  clearDrillMarks();
+  for (const e of stickerEls[t.face + t.i]) e.classList.add('drill-target');
+  $('drill-answer').textContent = '?'; $('drill-answer').className = '';
+  $('drill-kind').textContent = `${t.kind === 'edge' ? 'Edge' : 'Corner'} sticker · ${t.face} face`;
+  $('drill-feedback').textContent = ''; $('drill-feedback').className = '';
+}
+function drillAnswer(letter) {
+  const t = drill.target;
+  if (!t) return;
+  if (drill.answered) { drillNext(); return; }      // a key during the pause after a miss moves on
+  drill.answered = true;
+  const ok = letter === t.letter;
+  drill.n++; drill.ms += performance.now() - drill.shownAt;
+  if (ok) { drill.ok++; drill.streak++; drill.best = Math.max(drill.best, drill.streak); } else drill.streak = 0;
+  drill.history.unshift({ letter: t.letter, typed: letter, ok });
+  drill.history.length = Math.min(drill.history.length, 24);
+  for (const e of stickerEls[t.face + t.i]) { e.classList.replace('drill-target', ok ? 'drill-ok' : 'drill-bad'); e.textContent = t.letter; }
+  keyButtons[t.letter].classList.add('ok');
+  if (!ok) keyButtons[letter].classList.add('bad');
+  $('drill-answer').textContent = t.letter; $('drill-answer').className = ok ? 'ok' : 'bad';
+  $('drill-feedback').textContent = ok ? 'Correct' : `Wrong: you typed ${letter}, it is ${t.letter}`;
+  $('drill-feedback').className = ok ? 'ok' : 'bad';
+  renderDrillStats();
+  drill.timer = setTimeout(drillNext, ok ? 600 : 2000);
+}
+function renderDrillStats() {
+  $('st-correct').innerHTML = `${drill.ok}<small> / ${drill.n}</small>`;
+  $('st-acc').textContent = drill.n ? `${Math.round((drill.ok / drill.n) * 100)}%` : '–';
+  $('st-streak').innerHTML = `${drill.streak}<small> best ${drill.best}</small>`;
+  $('st-time').textContent = drill.n ? `${(drill.ms / drill.n / 1000).toFixed(1)}s` : '–';
+  $('drill-history').replaceChildren(...drill.history.map(h => {
+    const s = el('span', h.ok ? 'ok' : 'bad', h.letter);
+    s.title = h.ok ? `${h.letter}: correct` : `${h.letter}: you typed ${h.typed}`;
+    return s;
+  }));
+}
+onSeg('drill-set', v => { store.set('bld.drillSet', v); drill.prev = null; drillNext(); });
+$('drill-reset').addEventListener('click', () => {
+  Object.assign(drill, { n: 0, ok: 0, streak: 0, best: 0, ms: 0, history: [] });
+  renderDrillStats(); drillNext();
+});
+
+function setMode(m) {
+  appMode = m; document.body.dataset.mode = m; setSeg('mode', m); store.set('bld.mode', m);
+  for (const b of $('letter-mode').querySelectorAll('button')) b.disabled = m === 'drill';
+  showMode();
+  if (m === 'drill') { pause(); drillNext(); }
+  else { clearTimeout(drill.timer); drill.target = null; clearDrillMarks(); if (current) show(pos); }
+}
+onSeg('mode', setMode);
+
 // keyboard: space play/pause, ←/→ step a move, shift+←/→ step a target, R random scramble
+// (in the letter drill: A–X answer, space / enter move on after a miss)
 document.addEventListener('keydown', e => {
   const t = e.target instanceof Element ? e.target : null;
   if (e.metaKey || e.ctrlKey || e.altKey || t?.closest('input, textarea, select')) return;
+  if (appMode === 'drill') {
+    if (/^[a-x]$/i.test(e.key)) { e.preventDefault(); drillAnswer(e.key.toUpperCase()); }
+    else if ((e.key === ' ' || e.key === 'Enter') && drill.answered && !t?.closest('button')) { e.preventDefault(); drillNext(); }
+    return;
+  }
   if (e.key === ' ') { if (t?.closest('button')) return; e.preventDefault(); play(); }
   else if (e.key === 'ArrowRight') { e.preventDefault(); e.shiftKey ? stepTarget(1) : step(1); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); e.shiftKey ? stepTarget(-1) : step(-1); }
   else if (e.key === 'r' || e.key === 'R') { $('scramble').value = ''; load(''); }
 });
 
-load('');
+load('').then(() => { if (store.get('bld.mode', 'solve') === 'drill') setMode('drill'); });
 </script>
 </body>
 </html>
