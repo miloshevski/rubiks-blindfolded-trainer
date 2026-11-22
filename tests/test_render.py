@@ -43,12 +43,25 @@ class Facelets(unittest.TestCase):
         self.assertEqual(f["D"][:3], "RRR")
         self.assertEqual(f["L"][2::3], "DDD")
 
+    def test_m_moves_centers(self):
+        f = cube("M2")
+        self.assertEqual((f["U"][4], f["D"][4], f["F"][4], f["B"][4]), ("D", "U", "B", "F"))
+        self.assertEqual((f["L"][4], f["R"][4]), ("L", "R"))
+        f = cube("M")                                  # M follows L: F gets U, U gets B
+        self.assertEqual((f["F"][4], f["U"][4]), ("U", "B"))
+        self.assertEqual(cube("M2 M2"), {x: x * 9 for x in FACES})
+
+    def test_face_turns_keep_centers(self):
+        f = cube("U R F D L B U2 R' F2")
+        for face in FACES:
+            self.assertEqual(f[face][4], face)
+
     def test_every_color_nine_times(self):
         f = cube("L' D2 B2 D2 B D F D R' F' U D L2 B2 D B2 L2 B2 U' B2 R2")
         allc = "".join(f.values())
         for face in FACES:
             self.assertEqual(allc.count(face), 9)
-            self.assertEqual(f[face][4], face)       # center untouched
+            self.assertEqual(f[face][4], face)       # no slice moves: centers stay
 
 
 class Payload(unittest.TestCase):

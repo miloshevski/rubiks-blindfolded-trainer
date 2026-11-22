@@ -7,7 +7,7 @@ Pochmann algorithm, in the order typed.
 """
 from . import method
 from .constants import LETTERS, PARITY_ALGS
-from .cube import (CORNER, EDGE, apply_alg, home_letter, is_solved, piece_of,
+from .cube import (CORNER, EDGE, apply_alg, centers_solved, home_letter, is_solved, piece_of,
                    slot_name)
 
 
@@ -79,12 +79,17 @@ def check(scrambled_state, steps):
                 "(odd number of edge and corner targets).")
     elif corner_side_effect:
         note = "UB/UL are swapped by the corner algorithms; the mistake is in the corners."
+    centers_ok = centers_solved(state)
+    if not centers_ok:
+        extra = "Centers are not in place (an odd number of M2-based algorithms leaves them turned by M2)."
+        note = f"{note} {extra}".strip()
 
     return {
         "correct": is_solved(state),
         # the UB/UL swap is caused by the corner algorithms, so it counts against corners
         "edges_correct": not wrong_e or corner_side_effect,
         "corners_correct": not wrong_c and not corner_side_effect,
+        "centers_correct": centers_ok,
         "wrong_edges": _piece_names(EDGE, wrong_e),
         "wrong_corners": _piece_names(CORNER, wrong_c),
         "note": note,

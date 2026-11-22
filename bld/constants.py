@@ -16,6 +16,9 @@ CORNER_NAMES = (
     "BUR BUL BDL BDR  DFL DFR DBR DBL"
 ).split()
 
+# Center stickers, one per face (tracked so slice moves like M2 render correctly).
+CENTER_NAMES = ["U", "R", "F", "D", "L", "B"]
+
 # --- edges (M2, buffer DF = stickers K/U) --------------------------------------
 EDGE_BUFFER_LETTERS = ("K", "U")
 EDGE_TRACE_LETTER = "U"          # sticker read in the buffer slot (matches the tutorial examples)

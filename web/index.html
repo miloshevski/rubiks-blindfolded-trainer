@@ -30,16 +30,18 @@
   #net { width: 100%; max-width: 440px; display: block; margin: 0 auto; }
   .stage { height: 340px; display: flex; align-items: center; justify-content: center; perspective: 900px; touch-action: none; cursor: grab; }
   .stage:active { cursor: grabbing; }
-  #cube { --s: 210px; width: var(--s); height: var(--s); position: relative; transform-style: preserve-3d; }
-  .face { position: absolute; inset: 0; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-    background: var(--cube-body); border-radius: 8px; backface-visibility: hidden; }
-  .face i { margin: 3px; border-radius: 6px; }
-  .f-F { transform: translateZ(calc(var(--s) / 2)); }
-  .f-B { transform: rotateY(180deg) translateZ(calc(var(--s) / 2)); }
-  .f-R { transform: rotateY(90deg) translateZ(calc(var(--s) / 2)); }
-  .f-L { transform: rotateY(-90deg) translateZ(calc(var(--s) / 2)); }
-  .f-U { transform: rotateX(90deg) translateZ(calc(var(--s) / 2)); }
-  .f-D { transform: rotateX(-90deg) translateZ(calc(var(--s) / 2)); }
+  /* 3D cube built from 26 cubies so single layers can turn. */
+  #cube { --c: 70px; width: calc(var(--c) * 3); height: calc(var(--c) * 3); position: relative; transform-style: preserve-3d; }
+  .layer { position: absolute; inset: 0; transform-style: preserve-3d; }
+  .cubie { position: absolute; left: var(--c); top: var(--c); width: var(--c); height: var(--c); transform-style: preserve-3d; }
+  .cubie > b { position: absolute; inset: 0; display: flex; background: var(--cube-body); border-radius: 4px; backface-visibility: hidden; }
+  .cubie > b > i { flex: 1; margin: 3px; border-radius: 6px; }
+  .cubie > .F { transform: translateZ(calc(var(--c) / 2)); }
+  .cubie > .B { transform: rotateY(180deg) translateZ(calc(var(--c) / 2)); }
+  .cubie > .R { transform: rotateY(90deg) translateZ(calc(var(--c) / 2)); }
+  .cubie > .L { transform: rotateY(-90deg) translateZ(calc(var(--c) / 2)); }
+  .cubie > .U { transform: rotateX(90deg) translateZ(calc(var(--c) / 2)); }
+  .cubie > .D { transform: rotateX(-90deg) translateZ(calc(var(--c) / 2)); }
   .hint { color: var(--muted); font-size: 12px; text-align: center; margin: 6px 0 0; }
   .wide { grid-column: 1 / -1; }
   pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 13px/1.5 ui-monospace, monospace; }
@@ -107,13 +109,72 @@ function drawNet(f) {
   }
 }
 
-function draw3d(f) {
-  const cube = $('cube'); cube.replaceChildren();
-  for (const face of 'UDFBRL') {
-    const div = document.createElement('div'); div.className = 'face f-' + face;
-    for (const c of f[face]) { const s = document.createElement('i'); s.style.background = COLORS[c]; div.appendChild(s); }
-    cube.appendChild(div);
+// --- 3D cube: 26 cubies at (x, y, z) in {-1,0,1}; y is up, z is towards the front ---
+const CUBIE_PX = 70;
+const FACE_AXIS = { U: ['y', 1], D: ['y', -1], R: ['x', 1], L: ['x', -1], F: ['z', 1], B: ['z', -1] };
+// Sticker index (row * 3 + col) inside a face string, same layout as bld/render.py.
+const CELL = {
+  U: (x, y, z) => (1 + z) * 3 + (1 + x), D: (x, y, z) => (1 - z) * 3 + (1 + x),
+  F: (x, y, z) => (1 - y) * 3 + (1 + x), B: (x, y, z) => (1 - y) * 3 + (1 - x),
+  R: (x, y, z) => (1 - y) * 3 + (1 - z), L: (x, y, z) => (1 - y) * 3 + (1 + z),
+};
+const cubies = [];
+(() => {
+  for (const x of [-1, 0, 1]) for (const y of [-1, 0, 1]) for (const z of [-1, 0, 1]) {
+    if (!x && !y && !z) continue;
+    const el = document.createElement('div'); el.className = 'cubie';
+    el.style.transform = `translate3d(${x * CUBIE_PX}px, ${-y * CUBIE_PX}px, ${z * CUBIE_PX}px)`;
+    const stickers = {};
+    for (const face of 'UDFBRL') {
+      const side = document.createElement('b'); side.className = face;
+      const [axis, dir] = FACE_AXIS[face];
+      if ({ x, y, z }[axis] === dir) { stickers[face] = document.createElement('i'); side.appendChild(stickers[face]); }
+      el.appendChild(side);
+    }
+    $('cube').appendChild(el);
+    cubies.push({ el, x, y, z, stickers });
   }
+})();
+
+function draw3d(f) {
+  for (const c of cubies)
+    for (const [face, sticker] of Object.entries(c.stickers))
+      sticker.style.background = COLORS[f[face][CELL[face](c.x, c.y, c.z)]];
+}
+
+// Layer turns.  CSS axes: X right, Y down, Z towards the viewer.
+const TURNS = {
+  U: ['Y', -90, c => c.y === 1], D: ['Y', 90, c => c.y === -1],
+  R: ['X', 90, c => c.x === 1], L: ['X', -90, c => c.x === -1], M: ['X', -90, c => c.x === 0],
+  F: ['Z', 90, c => c.z === 1], B: ['Z', -90, c => c.z === -1],
+};
+function animateMove(move, ms) {
+  const [axis, quarter, inLayer] = TURNS[move[0]];
+  const angle = quarter * (move.endsWith('2') ? 2 : move.endsWith("'") ? -1 : 1);
+  const layer = document.createElement('div'); layer.className = 'layer';
+  $('cube').appendChild(layer);
+  const moving = cubies.filter(inLayer);
+  for (const c of moving) layer.appendChild(c.el);
+  return new Promise(resolve => {
+    const start = performance.now();
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      for (const c of moving) $('cube').appendChild(c.el);
+      layer.remove();
+      resolve();
+    };
+    const frame = now => {
+      if (done) return;
+      const t = Math.min(1, (now - start) / ms);
+      const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+      layer.style.transform = `rotate${axis}(${angle * eased}deg)`;
+      if (t < 1) requestAnimationFrame(frame); else finish();
+    };
+    requestAnimationFrame(frame);
+    setTimeout(finish, ms + 40);   // keeps playback going when the tab is hidden (no animation frames)
+  });
 }
 
 let rotX = -25, rotY = -35;
@@ -149,32 +210,35 @@ function renderSolution(text) {
 }
 
 // Replay the cube state after every move on the 3D cube.
-const MOVE_MS = 100;   // 10 turns per second
-let current = null, practice = null, simTimer = null, simButton = null;
+const MOVE_MS = 200;   // 5 turns per second
+const TURN_MS = 100;    // part of each move spent animating the layer turn
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let current = null, practice = null, simButton = null, playToken = 0;
 function stopSim(status) {
-  clearTimeout(simTimer); simTimer = null;
+  playToken++;
   if (simButton) simButton.textContent = simButton.dataset.idle;
   simButton = null;
   if (status !== undefined) $('simstatus').textContent = status;
 }
-function play(frames, button, doneText) {
-  const pressedStop = simTimer && simButton === button;
-  if (simTimer) stopSim('Stopped');
+async function play(frames, button, doneText) {
+  const pressedStop = simButton === button;
+  if (simButton) stopSim('Stopped');
   if (pressedStop || !current) return;
   if (!frames) { $('simstatus').textContent = 'Server is outdated: restart python3 -m bld.server'; return; }
   draw3d(current.facelets);
   if (!frames.length) { $('simstatus').textContent = 'No moves to play'; return; }
+  const token = ++playToken;
   simButton = button; button.textContent = 'Stop';
-  let i = 0;
-  const step = () => {
+  for (let i = 0; i < frames.length; i++) {
     const f = frames[i];
-    draw3d(f.facelets);
     $('simstatus').textContent = `${f.label}: ${f.move}  (${i + 1}/${frames.length})`;
-    i++;
-    if (i < frames.length) simTimer = setTimeout(step, MOVE_MS);
-    else stopSim(doneText(frames.length));
-  };
-  simTimer = setTimeout(step, MOVE_MS);
+    await animateMove(f.move, TURN_MS);
+    draw3d(f.facelets);                       // snap to the exact state after this move
+    if (token !== playToken) return;
+    await sleep(MOVE_MS - TURN_MS);
+    if (token !== playToken) return;
+  }
+  stopSim(doneText(frames.length));
 }
 $('simulate').addEventListener('click', () =>
   current && play(current.frames, $('simulate'), n => `Done: ${n} moves, cube solved`));
@@ -201,7 +265,8 @@ $('practice').addEventListener('submit', async e => {
   out.className = data.correct ? 'ok' : 'bad';
   out.textContent = data.correct
     ? '✓ Correct: the cube is solved'
-    : [`✗ Incorrect: edges ${data.edges_correct ? 'correct' : 'WRONG'}, corners ${data.corners_correct ? 'correct' : 'WRONG'}`,
+    : [`✗ Incorrect: edges ${data.edges_correct ? 'correct' : 'WRONG'}, corners ${data.corners_correct ? 'correct' : 'WRONG'}` +
+         (data.centers_correct === false ? ', centers WRONG' : ''),
        data.wrong_edges.length ? `Wrong edges: ${data.wrong_edges.join(' ')}` : '',
        data.wrong_corners.length ? `Wrong corners: ${data.wrong_corners.join(' ')}` : '',
        data.note].filter(Boolean).join('\n');

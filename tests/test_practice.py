@@ -79,6 +79,13 @@ class Check(unittest.TestCase):
         self.assertTrue(r["corners_correct"] or "parity" in r["note"])
         self.assertIn("parity", r["note"])
 
+    def test_centers_reported(self):
+        r = check_payload(SCRAMBLE_2, "A", "", None)       # one M2: centers turned
+        self.assertFalse(r["correct"])
+        self.assertFalse(r["centers_correct"])
+        self.assertIn("Centers", r["note"])
+        self.assertTrue(check_payload(SCRAMBLE_2, EDGES_2, CORNERS_2, 1)["centers_correct"])
+
     def test_frame_count_matches_moves(self):
         r = check_payload(SCRAMBLE_2, "A", "V", None)
         self.assertEqual([f["move"] for f in r["frames"]][:1], ["M2"])

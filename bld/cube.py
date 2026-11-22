@@ -1,18 +1,20 @@
-"""Sticker-level 3x3 cube model (Speffz lettering, edges and corners only).
+"""Sticker-level 3x3 cube model (Speffz lettering).
 
-A cube state is an immutable tuple of 48 ints.  Index ``i`` is a *slot*
+A cube state is an immutable tuple of 54 ints.  Index ``i`` is a *slot*
 (a sticker position); the value is the *home slot* of the sticker that is
 currently sitting there.  Slots 0-23 are the edge stickers A-X, slots 24-47
-are the corner stickers A-X.  Centers are not tracked.
+are the corner stickers A-X, slots 48-53 are the centers U R F D L B.
+Face turns only spin their own center in place; slice moves (M) move centers.
 
 Nothing in this module mutates a state: every operation returns a new tuple.
 """
 import random
 
-from .constants import CORNER_NAMES, EDGE_NAMES, LETTERS
+from .constants import CENTER_NAMES, CORNER_NAMES, EDGE_NAMES, LETTERS
 
 EDGE, CORNER = "edge", "corner"
 OFFSET = {EDGE: 0, CORNER: 24}
+CENTER_OFFSET = 48
 
 FACE_VECTORS = _FACE = {
     "U": (0, 1, 0), "D": (0, -1, 0),
@@ -28,9 +30,19 @@ def _slot(name):
 
 
 _NAMES = {EDGE: EDGE_NAMES, CORNER: CORNER_NAMES}
-SLOTS = [_slot(n) for n in EDGE_NAMES] + [_slot(n) for n in CORNER_NAMES]
+SLOTS = ([_slot(n) for n in EDGE_NAMES] + [_slot(n) for n in CORNER_NAMES]
+         + [_slot(n) for n in CENTER_NAMES])
+NUM_SLOTS = len(SLOTS)
 _SLOT_INDEX = {s: i for i, s in enumerate(SLOTS)}
-assert len(set(SLOTS)) == 48
+assert len(set(SLOTS)) == NUM_SLOTS == 54
+
+
+def center_index(face):
+    return CENTER_OFFSET + CENTER_NAMES.index(face)
+
+
+def centers_solved(state):
+    return all(state[i] == i for i in range(CENTER_OFFSET, NUM_SLOTS))
 
 
 def slot_name(kind, letter):
@@ -71,7 +83,7 @@ _LAYER = {
 
 def _quarter_turn_perm(face):
     """src[j] = slot whose sticker lands in slot j after one clockwise turn."""
-    src = list(range(48))
+    src = list(range(NUM_SLOTS))
     for i, (pos, normal) in enumerate(SLOTS):
         if _LAYER[face](pos):
             dest = _SLOT_INDEX[(_ROT[face](*pos), _ROT[face](*normal))]
@@ -123,7 +135,7 @@ def invert_alg(alg):
 
 # --- state helpers ---------------------------------------------------------
 def solved_state():
-    return tuple(range(48))
+    return tuple(range(NUM_SLOTS))
 
 
 def is_solved(state):
