@@ -47,6 +47,10 @@
   .ok { color: #1fa84f; } .bad { color: #d6322b; }
   .sim { display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
   #simstatus { font: 15px ui-monospace, monospace; color: var(--muted); }
+  .pform { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .pform label { display: flex; gap: 6px; align-items: center; flex: 1 1 260px; }
+  .pform label.chk { flex: 0 0 auto; }
+  #p-result { font: 16px ui-monospace, monospace; margin: 10px 0 0; min-height: 1.4em; white-space: pre-line; }
   .hl { background: #ffe27a; color: #3a2c00; font-weight: 700; border-radius: 3px; }
 </style>
 </head>
@@ -66,7 +70,16 @@
   <section><h2>3D cube</h2>
     <div class="stage" id="stage"><div id="cube"></div></div>
     <p class="hint">Drag to rotate</p>
-    <div class="sim"><button type="button" id="simulate">Simulate solving</button><span id="simstatus"></span></div></section>
+    <div class="sim"><button type="button" id="simulate" data-idle="Simulate solving">Simulate solving</button><span id="simstatus"></span></div></section>
+  <section class="wide"><h2>Check your solution</h2>
+    <form id="practice" class="pform" autocomplete="off">
+      <label>Edges <input type="text" id="p-edges" placeholder="e.g. hs ef bo sa gn p" spellcheck="false"></label>
+      <label>Corners <input type="text" id="p-corners" placeholder="e.g. bn cs wj dg" spellcheck="false"></label>
+      <label class="chk" title="Uses the parity algorithm selected at the top"><input type="checkbox" id="p-parity"> Parity</label>
+      <button class="primary" type="submit">Check</button>
+      <button type="button" id="p-render" data-idle="Render my solution" disabled>Render my solution</button>
+    </form>
+    <p id="p-result"></p></section>
   <section class="wide"><h2>Solution <span id="verified"></span></h2>
     <p class="memo" id="memo"></p><pre id="solution"></pre></section>
 </main>
@@ -135,22 +148,23 @@ function renderSolution(text) {
   });
 }
 
-// Simulate solving: replay the cube state after every move on the 3D cube.
-const MOVE_MS = 300;
-let current = null, simTimer = null;
+// Replay the cube state after every move on the 3D cube.
+const MOVE_MS = 100;   // 10 turns per second
+let current = null, practice = null, simTimer = null, simButton = null;
 function stopSim(status) {
   clearTimeout(simTimer); simTimer = null;
-  $('simulate').textContent = 'Simulate solving';
+  if (simButton) simButton.textContent = simButton.dataset.idle;
+  simButton = null;
   if (status !== undefined) $('simstatus').textContent = status;
 }
-$('simulate').addEventListener('click', () => {
-  if (!current) return;
-  if (simTimer) { stopSim('Stopped'); return; }
-  const frames = current.frames;
+function play(frames, button, doneText) {
+  const pressedStop = simTimer && simButton === button;
+  if (simTimer) stopSim('Stopped');
+  if (pressedStop || !current) return;
   if (!frames) { $('simstatus').textContent = 'Server is outdated: restart python3 -m bld.server'; return; }
   draw3d(current.facelets);
-  if (!frames.length) { $('simstatus').textContent = 'Already solved'; return; }
-  $('simulate').textContent = 'Stop';
+  if (!frames.length) { $('simstatus').textContent = 'No moves to play'; return; }
+  simButton = button; button.textContent = 'Stop';
   let i = 0;
   const step = () => {
     const f = frames[i];
@@ -158,13 +172,46 @@ $('simulate').addEventListener('click', () => {
     $('simstatus').textContent = `${f.label}: ${f.move}  (${i + 1}/${frames.length})`;
     i++;
     if (i < frames.length) simTimer = setTimeout(step, MOVE_MS);
-    else stopSim(`Done: ${frames.length} moves, cube solved`);
+    else stopSim(doneText(frames.length));
   };
   simTimer = setTimeout(step, MOVE_MS);
+}
+$('simulate').addEventListener('click', () =>
+  current && play(current.frames, $('simulate'), n => `Done: ${n} moves, cube solved`));
+
+// Check a solution typed by the user (letters exactly as executed).
+function resetPractice() {
+  practice = null; $('p-render').disabled = true;
+  $('p-result').textContent = ''; $('p-result').className = '';
+}
+$('practice').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!current) return;
+  if (simButton === $('p-render')) stopSim('');
+  const q = new URLSearchParams({
+    scramble: current.scramble, edges: $('p-edges').value, corners: $('p-corners').value,
+    parity: $('p-parity').checked ? '1' : '0', parity_alg: $('parity').value,
+  });
+  const res = await fetch('/api/check?' + q);
+  const data = await res.json();
+  resetPractice();
+  const out = $('p-result');
+  if (!res.ok) { out.className = 'bad'; out.textContent = data.error; return; }
+  practice = data; $('p-render').disabled = false;
+  out.className = data.correct ? 'ok' : 'bad';
+  out.textContent = data.correct
+    ? '✓ Correct: the cube is solved'
+    : [`✗ Incorrect: edges ${data.edges_correct ? 'correct' : 'WRONG'}, corners ${data.corners_correct ? 'correct' : 'WRONG'}`,
+       data.wrong_edges.length ? `Wrong edges: ${data.wrong_edges.join(' ')}` : '',
+       data.wrong_corners.length ? `Wrong corners: ${data.wrong_corners.join(' ')}` : '',
+       data.note].filter(Boolean).join('\n');
 });
+$('p-render').addEventListener('click', () => practice && play(practice.frames, $('p-render'),
+  n => `Your solution: ${n} moves, ${practice.correct ? 'cube solved' : 'cube NOT solved'}`));
 
 async function load(scramble) {
   stopSim('');
+  resetPractice();
   const q = new URLSearchParams({ parity: $('parity').value });
   if (scramble) q.set('scramble', scramble);
   $('msg').textContent = '';

@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, urlparse
 
 from .constants import DEFAULT_PARITY, PARITY_ALGS
 from .cube import apply_alg, random_scramble, solved_state
+from .practice import check, normalize, user_steps
 from .render import facelets
 from .solver import format_solution, pair_up, solve, verify
 
@@ -40,6 +41,26 @@ def solving_frames(state, solution):
     if solution.parity_algorithm:
         labelled.append(("Parity", solution.parity_algorithm))
     labelled += [(f"Corners {s.memo_letter}", s.algorithm) for s in solution.corners]
+    return frames_for(state, labelled)
+
+
+def check_payload(scramble, edges, corners, parity_number=None):
+    """Run the user's typed solution on the scramble.  Raises ValueError on bad input."""
+    if not scramble or not scramble.strip():
+        raise ValueError("no scramble")
+    if parity_number is not None and parity_number not in PARITY_ALGS:
+        raise ValueError(f"parity must be one of {sorted(PARITY_ALGS)}")
+    state = apply_alg(solved_state(), " ".join(scramble.split()))
+    steps = user_steps(edges, corners, parity_number)
+    result = check(state, steps)
+    result["edges"] = normalize(edges)
+    result["corners"] = normalize(corners)
+    result["frames"] = frames_for(state, steps)
+    return result
+
+
+def frames_for(state, labelled):
+    """Cube after every single move of [(label, algorithm), ...]."""
     frames = []
     for label, alg in labelled:
         for move in alg.split():
@@ -68,6 +89,16 @@ class Handler(BaseHTTPRequestHandler):
                 seed = int(q["seed"][0]) if q.get("seed") and q["seed"][0] else None
                 payload = build_payload(q.get("scramble", [None])[0], seed,
                                         int(q.get("parity", [DEFAULT_PARITY])[0]))
+            except (ValueError, KeyError) as e:
+                self._send(400, json.dumps({"error": str(e)}), "application/json")
+                return
+            self._send(200, json.dumps(payload), "application/json")
+        elif url.path == "/api/check":
+            q = parse_qs(url.query)
+            first = lambda k, d="": q.get(k, [d])[0]
+            try:
+                parity = int(first("parity_alg", DEFAULT_PARITY)) if first("parity") == "1" else None
+                payload = check_payload(first("scramble"), first("edges"), first("corners"), parity)
             except (ValueError, KeyError) as e:
                 self._send(400, json.dumps({"error": str(e)}), "application/json")
                 return
