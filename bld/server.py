@@ -9,7 +9,7 @@ from urllib.parse import parse_qs, urlparse
 from .constants import DEFAULT_PARITY, PARITY_ALGS
 from .cube import apply_alg, random_scramble, solved_state
 from .practice import check, normalize, user_steps
-from .render import facelets
+from .render import ABSOLUTE_LETTERS, facelets, sticker_letters
 from .solver import format_solution, pair_up, solve, verify
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web")
@@ -27,6 +27,8 @@ def build_payload(scramble=None, seed=None, parity=DEFAULT_PARITY):
     return {
         "scramble": scramble,
         "facelets": facelets(state),
+        "letters": sticker_letters(state),          # relative lettering of this state
+        "absolute_letters": ABSOLUTE_LETTERS,
         "edge_memo": pair_up(solution.edge_memo),
         "corner_memo": pair_up(solution.corner_memo),
         "solution": format_solution(solution),
@@ -65,7 +67,8 @@ def frames_for(state, labelled):
     for label, alg in labelled:
         for move in alg.split():
             state = apply_alg(state, move)
-            frames.append({"label": label, "move": move, "facelets": facelets(state)})
+            frames.append({"label": label, "move": move, "facelets": facelets(state),
+                           "letters": sticker_letters(state)})
     return frames
 
 

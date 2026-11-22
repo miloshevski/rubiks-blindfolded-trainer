@@ -64,6 +64,33 @@ class Facelets(unittest.TestCase):
             self.assertEqual(f[face][4], face)       # no slice moves: centers stay
 
 
+class Letters(unittest.TestCase):
+    def test_absolute_letters_follow_speffz(self):
+        from bld.render import ABSOLUTE_LETTERS as A
+        self.assertEqual(A["U"], "AABD.BDCC")      # UBL UB UBR / UL . UR / UFL UF UFR
+        self.assertEqual(A["F"], "IIJL.JLKK")
+        self.assertEqual(A["R"], "MMNP.NPOO")
+        self.assertEqual(A["B"], "QQRT.RTSS")      # B face seen from behind: R=BL, T=BR
+        self.assertEqual(A["L"], "EEFH.FHGG")
+        self.assertEqual(A["D"], "UUVX.VXWW")
+
+    def test_relative_letters_move_with_stickers(self):
+        from bld.render import ABSOLUTE_LETTERS, sticker_letters
+        self.assertEqual(sticker_letters(solved_state()), ABSOLUTE_LETTERS)
+        rel = sticker_letters(apply_alg(solved_state(), "R"))
+        self.assertEqual(rel["F"], "IIVL.VLKW")     # D-face stickers came up to F's right column
+        self.assertEqual(rel["F"][4], ".")          # centers never get a letter
+
+    def test_payload_has_letters_for_every_frame(self):
+        p = build_payload("R U")
+        self.assertIn("absolute_letters", p)
+        self.assertEqual(p["letters"], __import__("bld.render", fromlist=["x"]).sticker_letters(
+            apply_alg(solved_state(), "R U")))
+        self.assertTrue(all("letters" in f for f in p["frames"]))
+        from bld.render import ABSOLUTE_LETTERS
+        self.assertEqual(p["frames"][-1]["letters"], ABSOLUTE_LETTERS)
+
+
 class Payload(unittest.TestCase):
     def test_payload(self):
         p = build_payload("D' F2 L2 U' R2 U B2 D U F' R F2 L B F U2 L U2 F R'")

@@ -36,6 +36,13 @@
   .cubie { position: absolute; left: var(--c); top: var(--c); width: var(--c); height: var(--c); transform-style: preserve-3d; }
   .cubie > b { position: absolute; inset: 0; display: flex; background: var(--cube-body); border-radius: 4px; backface-visibility: hidden; }
   .cubie > b > i { flex: 1; margin: 3px; border-radius: 6px; }
+  /* Sticker letters (display only). Dark text on light stickers, light text on dark ones. */
+  .cubie > b > i, .ghost i { display: flex; align-items: center; justify-content: center;
+    font: 700 30px/1 system-ui, sans-serif; color: #15171a; user-select: none; }
+  .ghost i { font-size: 24px; }
+  .ghost.turn-text i { transform: rotate(180deg); }   /* U/D copies are seen from the opposite side */
+  .cubie > b > i.dark-sticker, .ghost i.dark-sticker { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+  .letters { display: flex; align-items: center; gap: 6px; }
   .cubie > .F { transform: translateZ(calc(var(--c) / 2)); }
   .cubie > .B { transform: rotateY(180deg) translateZ(calc(var(--c) / 2)); }
   .cubie > .R { transform: rotateY(90deg) translateZ(calc(var(--c) / 2)); }
@@ -78,7 +85,14 @@
   <section><h2>3D cube</h2>
     <div class="stage" id="stage"><div id="cube"></div></div>
     <p class="hint">Drag to rotate</p>
-    <div class="sim"><button type="button" id="simulate" data-idle="Simulate solving">Simulate solving</button><span id="simstatus"></span></div></section>
+    <div class="sim"><button type="button" id="simulate" data-idle="Simulate solving">Simulate solving</button><span id="simstatus"></span></div>
+    <div class="sim">
+      <label class="letters"><input type="checkbox" id="show-letters"> Show Letters</label>
+      <select id="letter-mode" title="Lettering mode">
+        <option value="absolute" selected>Absolute (fixed to positions)</option>
+        <option value="relative">Relative (moves with stickers)</option>
+      </select>
+    </div></section>
   <section class="wide"><h2>Check your solution</h2>
     <form id="practice" class="pform" autocomplete="off">
       <label>Edges <input type="text" id="p-edges" placeholder="e.g. hs ef bo sa gn p" spellcheck="false"></label>
@@ -147,21 +161,42 @@ const GHOST_OFFSET = 2.4;   // distance from the cube center, in cubie sizes
 const GHOST_ROT = { F: '', B: 'rotateY(180deg)', R: 'rotateY(90deg)', L: 'rotateY(-90deg)', U: 'rotateX(90deg)', D: 'rotateX(-90deg)' };
 const ghosts = {};
 for (const face of 'UDFBRL') {
-  const g = document.createElement('div'); g.className = 'ghost';
+  const g = document.createElement('div'); g.className = 'ghost' + ('UD'.includes(face) ? ' turn-text' : '');
   g.style.transform = `${GHOST_ROT[face]} translateZ(${GHOST_OFFSET * CUBIE_PX}px) rotateY(180deg)`;
   ghosts[face] = Array.from({ length: 9 }, () => g.appendChild(document.createElement('i')));
   $('cube').appendChild(g);
 }
 
-function draw3d(f) {
+// Sticker lettering (display only): absolute = letter of the position,
+// relative = letter of the physical sticker (sent by the server for each state).
+const DARK_STICKERS = 'FBR';          // green, blue, red get light text
+let absoluteLetters = null, shown = null;
+function letterFor(view, face, i) {
+  if (!$('show-letters').checked) return '';
+  const src = $('letter-mode').value === 'absolute' ? absoluteLetters : view.letters;
+  const ch = src && src[face][i];
+  return ch && ch !== '.' ? ch : '';
+}
+function paint(el, view, face, i) {
+  const color = view.facelets[face][i];
+  el.style.background = COLORS[color];
+  el.classList.toggle('dark-sticker', DARK_STICKERS.includes(color));
+  el.textContent = letterFor(view, face, i);
+}
+
+// view = { facelets, letters } for one cube state.
+function draw3d(view) {
+  shown = view;
   for (const c of cubies)
     for (const [face, sticker] of Object.entries(c.stickers))
-      sticker.style.background = COLORS[f[face][CELL[face](c.x, c.y, c.z)]];
+      paint(sticker, view, face, CELL[face](c.x, c.y, c.z));
   // The flip mirrors columns, so column c of the face goes to grid column 2 - c.
   for (const face of 'UDFBRL')
     for (let i = 0; i < 9; i++)
-      ghosts[face][Math.floor(i / 3) * 3 + (2 - i % 3)].style.background = COLORS[f[face][i]];
+      paint(ghosts[face][Math.floor(i / 3) * 3 + (2 - i % 3)], view, face, i);
 }
+for (const id of ['show-letters', 'letter-mode'])
+  $(id).addEventListener('change', () => shown && draw3d(shown));
 
 // Layer turns.  CSS axes: X right, Y down, Z towards the viewer.
 const TURNS = {
@@ -246,7 +281,7 @@ async function play(frames, button, doneText) {
   if (simButton) stopSim('Stopped');
   if (pressedStop || !current) return;
   if (!frames) { $('simstatus').textContent = 'Server is outdated: restart python3 -m bld.server'; return; }
-  draw3d(current.facelets); drawNet(current.facelets);
+  draw3d(current); drawNet(current.facelets);
   if (!frames.length) { $('simstatus').textContent = 'No moves to play'; return; }
   const token = ++playToken;
   simButton = button; button.textContent = 'Stop';
@@ -254,7 +289,7 @@ async function play(frames, button, doneText) {
     const f = frames[i];
     $('simstatus').textContent = `${f.label}: ${f.move}  (${i + 1}/${frames.length})`;
     await animateMove(f.move, TURN_MS);
-    draw3d(f.facelets);                       // snap to the exact state after this move
+    draw3d(f);                                // snap to the exact state after this move
     drawNet(f.facelets);                      // keep the 2D net in step with the 3D cube
     if (token !== playToken) return;
     await sleep(MOVE_MS - TURN_MS);
@@ -307,7 +342,8 @@ async function load(scramble) {
   if (!res.ok) { $('msg').textContent = data.error; return; }
   current = data;
   $('scramble').value = data.scramble;
-  drawNet(data.facelets); draw3d(data.facelets); applyRotation();
+  absoluteLetters = data.absolute_letters;
+  drawNet(data.facelets); draw3d(data); applyRotation();
   $('memo').textContent = `Edges: ${data.edge_memo || '-'}   Corners: ${data.corner_memo || '-'}`;
   renderSolution(data.solution);
   const v = $('verified'); v.textContent = data.verified ? '✓ verified solved' : '✗ does not solve';
