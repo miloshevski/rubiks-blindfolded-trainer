@@ -45,6 +45,7 @@
   pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 13px/1.5 ui-monospace, monospace; }
   .memo { font: 15px ui-monospace, monospace; margin: 0 0 10px; }
   .ok { color: #1fa84f; } .bad { color: #d6322b; }
+  .hl { background: #ffe27a; color: #3a2c00; font-weight: 700; border-radius: 3px; }
 </style>
 </head>
 <body>
@@ -113,6 +114,24 @@ const applyRotation = () => { $('cube').style.transform = `rotateX(${rotX}deg) r
   stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
 })();
 
+// Display-only highlighting of the swapping algorithms; the solution text itself is unchanged.
+const HIGHLIGHT = { 'Edges:': /(?<!\S)M2(?!\S)/g, 'Corners:': /R U' R' U' R U R' F' R U R' U' R' F R/g };
+function renderSolution(text) {
+  const root = $('solution'); root.replaceChildren();
+  let re = null;
+  text.split('\n').forEach((line, i) => {
+    if (i) root.append('\n');
+    if (line in HIGHLIGHT || line === 'Parity:') { re = HIGHLIGHT[line] || null; root.append(line); return; }
+    let last = 0;
+    if (re) for (const m of line.split('   #')[0].matchAll(re)) {
+      root.append(line.slice(last, m.index));
+      const h = document.createElement('span'); h.className = 'hl'; h.textContent = m[0]; root.appendChild(h);
+      last = m.index + m[0].length;
+    }
+    root.append(line.slice(last));
+  });
+}
+
 async function load(scramble) {
   const q = new URLSearchParams({ parity: $('parity').value });
   if (scramble) q.set('scramble', scramble);
@@ -123,7 +142,7 @@ async function load(scramble) {
   $('scramble').value = data.scramble;
   drawNet(data.facelets); draw3d(data.facelets); applyRotation();
   $('memo').textContent = `Edges: ${data.edge_memo || '-'}   Corners: ${data.corner_memo || '-'}`;
-  $('solution').textContent = data.solution;
+  renderSolution(data.solution);
   const v = $('verified'); v.textContent = data.verified ? '✓ verified solved' : '✗ does not solve';
   v.className = data.verified ? 'ok' : 'bad';
 }
