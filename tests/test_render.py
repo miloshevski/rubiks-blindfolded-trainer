@@ -58,6 +58,19 @@ class Payload(unittest.TestCase):
         self.assertEqual(p["edge_memo"], "HI EF BO SA GN P")
         self.assertEqual(set(p["facelets"]), set(FACES))
 
+    def test_frames_replay_every_move_and_end_solved(self):
+        p = build_payload("D' F2 L2 U' R2 U B2 D U F' R F2 L B F U2 L U2 F R'")
+        moves = [m for line in p["solution"].splitlines() if ":" in line and line[1] == ":"
+                 for m in line.split(":", 1)[1].split("#")[0].split()]
+        parity = p["solution"].split("Parity:\n")[1].splitlines()[0].split()
+        self.assertEqual(len(p["frames"]), len(moves) + len(parity))
+        self.assertEqual(p["frames"][-1]["facelets"], {f: f * 9 for f in FACES})
+        self.assertEqual(p["frames"][0]["label"], "Edges H")
+        self.assertEqual(p["frames"][0]["move"], "L")
+
+    def test_solved_cube_has_no_frames(self):
+        self.assertEqual(build_payload("R R'")["frames"], [])
+
     def test_random_is_seeded(self):
         self.assertEqual(build_payload(None, seed=3)["scramble"], build_payload("", seed=3)["scramble"])
 

@@ -30,7 +30,22 @@ def build_payload(scramble=None, seed=None, parity=DEFAULT_PARITY):
         "corner_memo": pair_up(solution.corner_memo),
         "solution": format_solution(solution),
         "verified": verify(scramble, solution),
+        "frames": solving_frames(state, solution),
     }
+
+
+def solving_frames(state, solution):
+    """Cube after every single move of the solution, in execution order."""
+    labelled = [(f"Edges {s.memo_letter}", s.algorithm) for s in solution.edges]
+    if solution.parity_algorithm:
+        labelled.append(("Parity", solution.parity_algorithm))
+    labelled += [(f"Corners {s.memo_letter}", s.algorithm) for s in solution.corners]
+    frames = []
+    for label, alg in labelled:
+        for move in alg.split():
+            state = apply_alg(state, move)
+            frames.append({"label": label, "move": move, "facelets": facelets(state)})
+    return frames
 
 
 class Handler(BaseHTTPRequestHandler):

@@ -45,6 +45,8 @@
   pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 13px/1.5 ui-monospace, monospace; }
   .memo { font: 15px ui-monospace, monospace; margin: 0 0 10px; }
   .ok { color: #1fa84f; } .bad { color: #d6322b; }
+  .sim { display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+  #simstatus { font: 15px ui-monospace, monospace; color: var(--muted); }
   .hl { background: #ffe27a; color: #3a2c00; font-weight: 700; border-radius: 3px; }
 </style>
 </head>
@@ -63,7 +65,8 @@
   <section><h2>2D net</h2><svg id="net" viewBox="0 0 12 9" role="img" aria-label="Unfolded cube"></svg></section>
   <section><h2>3D cube</h2>
     <div class="stage" id="stage"><div id="cube"></div></div>
-    <p class="hint">Drag to rotate</p></section>
+    <p class="hint">Drag to rotate</p>
+    <div class="sim"><button type="button" id="simulate">Simulate solving</button><span id="simstatus"></span></div></section>
   <section class="wide"><h2>Solution <span id="verified"></span></h2>
     <p class="memo" id="memo"></p><pre id="solution"></pre></section>
 </main>
@@ -132,13 +135,43 @@ function renderSolution(text) {
   });
 }
 
+// Simulate solving: replay the cube state after every move on the 3D cube.
+const MOVE_MS = 300;
+let current = null, simTimer = null;
+function stopSim(status) {
+  clearTimeout(simTimer); simTimer = null;
+  $('simulate').textContent = 'Simulate solving';
+  if (status !== undefined) $('simstatus').textContent = status;
+}
+$('simulate').addEventListener('click', () => {
+  if (!current) return;
+  if (simTimer) { stopSim('Stopped'); return; }
+  const frames = current.frames;
+  if (!frames) { $('simstatus').textContent = 'Server is outdated: restart python3 -m bld.server'; return; }
+  draw3d(current.facelets);
+  if (!frames.length) { $('simstatus').textContent = 'Already solved'; return; }
+  $('simulate').textContent = 'Stop';
+  let i = 0;
+  const step = () => {
+    const f = frames[i];
+    draw3d(f.facelets);
+    $('simstatus').textContent = `${f.label}: ${f.move}  (${i + 1}/${frames.length})`;
+    i++;
+    if (i < frames.length) simTimer = setTimeout(step, MOVE_MS);
+    else stopSim(`Done: ${frames.length} moves, cube solved`);
+  };
+  simTimer = setTimeout(step, MOVE_MS);
+});
+
 async function load(scramble) {
+  stopSim('');
   const q = new URLSearchParams({ parity: $('parity').value });
   if (scramble) q.set('scramble', scramble);
   $('msg').textContent = '';
   const res = await fetch('/api/cube?' + q);
   const data = await res.json();
   if (!res.ok) { $('msg').textContent = data.error; return; }
+  current = data;
   $('scramble').value = data.scramble;
   drawNet(data.facelets); draw3d(data.facelets); applyRotation();
   $('memo').textContent = `Edges: ${data.edge_memo || '-'}   Corners: ${data.corner_memo || '-'}`;
