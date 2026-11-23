@@ -282,6 +282,10 @@
   body[data-mode=drill] .drill { display: flex; }
   body[data-mode=drill] main { grid-template-columns: minmax(0, 1fr) minmax(360px, 520px); grid-template-areas: "stage drill"; }
   body[data-mode=drill] .stage-col { border-bottom: 0; }
+  body[data-mode=drill] .drill .bar .r { flex-wrap: wrap; }
+  .seg.faces button { padding: 0 8px; display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); }
+  .seg.faces button i { width: 8px; height: 8px; border-radius: 2px; opacity: .35; }
+  .seg.faces button[aria-pressed="true"] i { opacity: 1; }
   .drill-body { padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; overflow: auto; }
   .prompt { display: flex; align-items: center; gap: 20px; }
   #drill-answer { width: 96px; height: 96px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
@@ -398,7 +402,7 @@
 
   <section class="stage-col">
     <div class="bar">
-      <div class="l"><h2>Cube</h2><span class="hint">Drag to rotate · hidden faces float behind</span></div>
+      <div class="l"><h2>Cube</h2><span class="hint">Drag or two-finger swipe to rotate · hidden faces float behind</span></div>
       <div class="r">
         <span id="letters-l" class="hint">Letters</span>
         <div class="seg" id="letter-mode" role="group" aria-labelledby="letters-l">
@@ -470,6 +474,14 @@
     <div class="bar">
       <div class="l"><h2>Letter drill</h2><span class="meta">type the letter of the blinking sticker</span></div>
       <div class="r">
+        <div class="seg faces" id="drill-faces" role="group" aria-label="Faces to drill">
+          <button type="button" data-v="U" title="Up"><i style="background: var(--U)"></i>U</button>
+          <button type="button" data-v="L" title="Left"><i style="background: var(--L)"></i>L</button>
+          <button type="button" data-v="F" title="Front"><i style="background: var(--F)"></i>F</button>
+          <button type="button" data-v="R" title="Right"><i style="background: var(--R)"></i>R</button>
+          <button type="button" data-v="B" title="Back"><i style="background: var(--B)"></i>B</button>
+          <button type="button" data-v="D" title="Down"><i style="background: var(--D)"></i>D</button>
+        </div>
         <div class="seg" id="drill-set" role="group" aria-label="Stickers to drill">
           <button type="button" data-v="edges">Edges</button>
           <button type="button" data-v="corners">Corners</button>
@@ -663,6 +675,16 @@ function applyRotation() {
   });
   const end = () => { drag = null; };
   stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
+  // Laptop trackpad: a two-finger swipe arrives as a wheel event. Fingers moving right
+  // (deltaX < 0 with natural scrolling) turn the cube like a drag to the right would.
+  // ctrlKey marks a pinch, which is left to the browser.
+  stage.addEventListener('wheel', e => {
+    if (e.ctrlKey) return;
+    e.preventDefault();
+    const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;   // lines / pages → px
+    rotY -= e.deltaX * k * 0.2; rotX += e.deltaY * k * 0.2;
+    applyRotation();
+  }, { passive: false });
 })();
 $('reset-view').addEventListener('click', () => { [rotX, rotY] = ROT0; applyRotation(); });
 applyRotation();
@@ -1012,6 +1034,17 @@ for (const l of LETTERS) {
   keyButtons[l] = $('keys').appendChild(b);
 }
 setSeg('drill-set', store.get('bld.drillSet', 'both'));
+// Faces to drill: independent toggles, at least one always stays on.
+const drillFaces = () => [...$('drill-faces').querySelectorAll('[aria-pressed="true"]')].map(b => b.dataset.v).join('');
+for (const b of $('drill-faces').querySelectorAll('button'))
+  b.setAttribute('aria-pressed', String(store.get('bld.drillFaces', 'URFDLB').includes(b.dataset.v)));
+$('drill-faces').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const on = b.getAttribute('aria-pressed') === 'true';
+  if (on && drillFaces().length === 1) return;
+  b.setAttribute('aria-pressed', String(!on));
+  store.set('bld.drillFaces', drillFaces()); drill.prev = null; drillNext();
+});
 const solvedView = () => ({ facelets: Object.fromEntries([...'URFDLB'].map(f => [f, f.repeat(9)])), letters: absoluteLetters });
 
 function clearDrillMarks() {
@@ -1025,7 +1058,7 @@ function drillNext() {
   if (!absoluteLetters) return;
   const set = segValue('drill-set');
   const pool = [];
-  for (const face of 'URFDLB') for (let i = 0; i < 9; i++) {
+  for (const face of drillFaces()) for (let i = 0; i < 9; i++) {
     if (i === 4) continue;
     const kind = i % 2 ? 'edge' : 'corner';
     if (set !== 'both' && set !== kind + 's') continue;
