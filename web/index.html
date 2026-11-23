@@ -314,12 +314,19 @@
   .arow.buffer .badge { color: var(--ink-3); border-color: #26282b; border-style: dashed; }
   .arow.buffer .alg { color: var(--ink-3); font-family: var(--sans); font-size: 12px; }
   .arow.par { grid-template-columns: 24px minmax(0, 1fr) auto; }
+  /* special edges: nested under Edges, with an "even → X" column for the opposite letter */
+  .algs-body > .group.col > .group + .group { border-top: 1px solid var(--rule-soft); margin-top: 6px; }
+  .algs-note { margin: 0 20px 8px; font-size: 12px; line-height: 1.5; color: var(--ink-2); max-width: 62ch; }
+  .arow.special { grid-template-columns: 24px 38px minmax(0, 1fr) 82px; }
+  .opp-cell { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; align-self: center; }
+  .badge.opp-badge { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
   .algs-empty { padding: 16px 20px; margin: 0; color: var(--ink-3); font-size: 12.5px; }
   @media (max-width: 899px) {
     .algs-body { grid-template-columns: minmax(0, 1fr); }
     .algs-body > .group + .group { border-left: 0; border-top: 1px solid var(--rule); }
     .algs .bar .r { flex: 1 0 100%; }
     .arow { padding-left: 16px; padding-right: 16px; column-gap: 10px; }
+    .algs-note { margin-left: 16px; margin-right: 16px; }
   }
   .drill-body { padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; overflow: auto; }
   .prompt { display: flex; align-items: center; gap: 20px; }
@@ -564,7 +571,7 @@
       <span><span class="mono">R U</span> setup</span>
       <span><span class="mono tk core">M2</span> swap / Y-perm</span>
       <span><span class="mono undo">U' R'</span> undo</span>
-      <span><span class="mono opp">→ W</span> executed as this letter on even targets</span>
+      <span><span class="mono opp">even → W</span> opposite letter, executed instead on even targets</span>
     </div>
     <div class="algs-body" id="algs-body"><p class="algs-empty">Loading…</p></div>
   </section>
@@ -1226,7 +1233,21 @@ function renderAlgs() {
       el('span', 'opp', r.opposite ? `→ ${r.opposite}` : ''));
     return d;
   };
-  const edges = algData.edges.filter(hit).map(r => pieceRow(r, 'buffer (DF)'));
+  const edges = algData.edges.filter(r => !r.special && hit(r)).map(r => pieceRow(r, 'buffer (DF)'));
+  // Special edges: their own algorithms, and (C, W, I, S) the letter executed instead on even targets.
+  const specialRow = r => {
+    const d = el('div', 'arow special');
+    const opp = el('span', 'opp-cell');
+    if (r.opposite) {
+      const o = algData.edges.find(e => e.letter === r.opposite);
+      opp.append(el('span', 'meta', 'even →'), el('span', 'badge opp-badge', r.opposite));
+      opp.title = `On even-numbered edge targets ${r.letter} (${r.sticker}) is executed as ${r.opposite} (${o.sticker})`;
+    } else opp.append(el('span', 'meta', '—'));
+    d.append(el('span', 'badge', r.letter), el('span', 'stk', r.sticker), algTokens(r), opp);
+    return d;
+  };
+  const special = algData.edges.filter(r => r.special && hit(r)).map(specialRow);
+  const pairs = [...new Set(algData.edges.filter(r => r.opposite).map(r => [r.letter, r.opposite].sort().join(' ↔ ')))];
   const corners = algData.corners.filter(hit).map(r => pieceRow(r, 'buffer (UBL)'));
   const parity = algData.parity
     .filter(p => {
@@ -1241,8 +1262,14 @@ function renderAlgs() {
         el('span', 'opp', p.number === algData.default_parity ? 'default' : ''));
       return d;
     });
+  const specialGroup = group('Special edges', 'own algorithms', special);
+  specialGroup.querySelector('.sec').after(el('p', 'algs-note',
+    `On even-numbered edge targets (2nd, 4th, …) execute the opposite letter: ${pairs.join(', ')}. ` +
+    'Each M2 swaps UF and DB, so after an odd number of targets those stickers sit in each other\'s place.'));
+  const edgeCol = el('div', 'group col');
+  edgeCol.append(group('Edges', 'setup + M2 + undo · buffer DF', edges), specialGroup);
   $('algs-body').replaceChildren(
-    group('Edges', 'M2 · buffer DF', edges),
+    edgeCol,
     group('Corners', 'Old Pochmann · buffer UBL', corners),
     group('Parity', 'after an odd number of edge targets', parity, true));
 }
