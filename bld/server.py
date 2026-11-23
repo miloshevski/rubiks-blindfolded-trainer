@@ -6,8 +6,10 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from .constants import DEFAULT_PARITY, PARITY_ALGS
-from .cube import apply_alg, random_scramble, solved_state
+from .constants import (CORNER_BUFFER_LETTERS, CORNER_NAMES, CORNER_SETUP, DEFAULT_PARITY,
+                        EDGE_BUFFER_LETTERS, EDGE_NAMES, EDGE_SETUP, EDGE_SPECIAL,
+                        EDGE_SWAP_MOVE, LETTERS, OPPOSITE, PARITY_ALGS, Y_PERM)
+from .cube import apply_alg, invert_alg, random_scramble, solved_state
 from .practice import check, normalize, user_steps
 from .render import ABSOLUTE_LETTERS, facelets, sticker_letters
 from .solver import format_solution, pair_up, solve, verify
@@ -72,6 +74,39 @@ def frames_for(state, labelled):
     return frames
 
 
+def algs_payload():
+    """Every algorithm of the method, split into setup / core / undo for display."""
+    def row(letter, sticker, setup, core, undo="", **extra):
+        return {"letter": letter, "sticker": sticker, "setup": setup, "core": core,
+                "undo": undo, **extra}
+
+    edges = []
+    for letter, sticker in zip(LETTERS, EDGE_NAMES):
+        if letter in EDGE_BUFFER_LETTERS:
+            edges.append(row(letter, sticker, "", "", buffer=True))
+        elif letter in EDGE_SPECIAL:
+            edges.append(row(letter, sticker, "", EDGE_SPECIAL[letter],
+                             opposite=OPPOSITE.get(letter), special=True))
+        else:
+            setup = EDGE_SETUP[letter]
+            edges.append(row(letter, sticker, setup, EDGE_SWAP_MOVE, invert_alg(setup),
+                             opposite=OPPOSITE.get(letter)))
+    corners = []
+    for letter, sticker in zip(LETTERS, CORNER_NAMES):
+        if letter in CORNER_BUFFER_LETTERS:
+            corners.append(row(letter, sticker, "", "", buffer=True))
+        else:
+            setup = CORNER_SETUP[letter]
+            corners.append(row(letter, sticker, setup, Y_PERM, invert_alg(setup) if setup else ""))
+    for r in edges + corners:     # the full algorithm, exactly as the solver runs it
+        r["alg"] = " ".join(p for p in (r["setup"], r["core"], r["undo"]) if p)
+    return {
+        "edges": edges, "corners": corners,
+        "parity": [{"number": n, "alg": a} for n, a in sorted(PARITY_ALGS.items())],
+        "default_parity": DEFAULT_PARITY,
+    }
+
+
 def _api_cube(first):
     seed = first("seed")
     return build_payload(first("scramble", None), int(seed) if seed else None,
@@ -83,7 +118,7 @@ def _api_check(first):
     return check_payload(first("scramble"), first("edges"), first("corners"), parity)
 
 
-API = {"/api/cube": _api_cube, "/api/check": _api_check}
+API = {"/api/cube": _api_cube, "/api/check": _api_check, "/api/algs": lambda first: algs_payload()}
 
 
 class Handler(BaseHTTPRequestHandler):

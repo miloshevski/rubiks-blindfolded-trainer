@@ -290,6 +290,37 @@
   .seg.faces button { padding: 0 8px; display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); }
   .seg.faces button i { width: 8px; height: 8px; border-radius: 2px; opacity: .35; }
   .seg.faces button[aria-pressed="true"] i { opacity: 1; }
+  /* ---------- algorithms reference mode ---------- */
+  .algs { grid-area: algs; display: none; min-width: 0; min-height: 0; flex-direction: column; }
+  body[data-mode=algs] #form, body[data-mode=algs] .parity, body[data-mode=algs] #msg,
+  body[data-mode=algs] .rail, body[data-mode=algs] .sheet, body[data-mode=algs] .tabs,
+  body[data-mode=algs] .stage-col, body[data-mode=algs] .drill { display: none !important; }
+  body[data-mode=algs] .algs { display: flex; }
+  body[data-mode=algs] main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "algs"; }
+  .algs > .bar, .algs > .legend { flex: 0 0 auto; }   /* never squeezed by the scrolling list */
+  .algs .bar .r { flex: 0 1 320px; min-width: 0; }
+  .algs .legend .opp { color: var(--ink-2); }
+  .algs-body { flex: 1 1 auto; overflow: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start; column-gap: 0; padding-bottom: 20px; }
+  .algs-body > .group { min-width: 0; }
+  .algs-body > .group + .group { border-left: 1px solid var(--rule); }
+  .algs-body > .group.wide { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--rule); margin-top: 8px; }
+  .algs-body .sec { padding-top: 14px; }
+  .arow { display: grid; grid-template-columns: 24px 38px minmax(0, 1fr) auto; column-gap: 12px; align-items: baseline;
+    padding: 5px 20px; }
+  .arow:hover { background: #121315; }
+  .arow .stk { font: 11px var(--mono); color: var(--ink-3); }
+  .arow .opp { font: 11px var(--mono); color: var(--ink-2); white-space: nowrap; }
+  .arow.buffer .badge { color: var(--ink-3); border-color: #26282b; border-style: dashed; }
+  .arow.buffer .alg { color: var(--ink-3); font-family: var(--sans); font-size: 12px; }
+  .arow.par { grid-template-columns: 24px minmax(0, 1fr) auto; }
+  .algs-empty { padding: 16px 20px; margin: 0; color: var(--ink-3); font-size: 12.5px; }
+  @media (max-width: 899px) {
+    .algs-body { grid-template-columns: minmax(0, 1fr); }
+    .algs-body > .group + .group { border-left: 0; border-top: 1px solid var(--rule); }
+    .algs .bar .r { flex: 1 0 100%; }
+    .arow { padding-left: 16px; padding-right: 16px; column-gap: 10px; }
+  }
   .drill-body { padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; overflow: auto; }
   .prompt { display: flex; align-items: center; gap: 20px; }
   #drill-answer { width: 96px; height: 96px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
@@ -340,6 +371,7 @@
   <div class="seg" id="mode" role="group" aria-label="Mode">
     <button type="button" data-v="solve" aria-pressed="true">Solve</button>
     <button type="button" data-v="drill" aria-pressed="false">Letter drill</button>
+    <button type="button" data-v="algs" aria-pressed="false">Algorithms</button>
   </div>
   <form id="form">
     <label for="scramble">Scramble</label>
@@ -518,6 +550,23 @@
         <button type="button" class="btn sm" id="drill-reset">Reset stats</button>
       </div>
     </div>
+  </section>
+
+  <section class="algs" aria-label="All algorithms">
+    <div class="bar">
+      <div class="l"><h2>Algorithms</h2><span class="meta">every target letter, as the solver runs it</span></div>
+      <div class="r">
+        <input class="field" type="search" id="alg-filter" placeholder="Filter: letter, sticker or move"
+               autocomplete="off" spellcheck="false" aria-label="Filter algorithms">
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="mono">R U</span> setup</span>
+      <span><span class="mono tk core">M2</span> swap / Y-perm</span>
+      <span><span class="mono undo">U' R'</span> undo</span>
+      <span><span class="mono opp">→ W</span> executed as this letter on even targets</span>
+    </div>
+    <div class="algs-body" id="algs-body"><p class="algs-empty">Loading…</p></div>
   </section>
 </main>
 
@@ -1127,10 +1176,77 @@ function setMode(m) {
   appMode = m; document.body.dataset.mode = m; setSeg('mode', m); store.set('bld.mode', m);
   for (const b of $('letter-mode').querySelectorAll('button')) b.disabled = m === 'drill';
   showMode();
-  if (m === 'drill') { pause(); drillNext(); }
-  else { clearTimeout(drill.timer); drill.target = null; clearDrillMarks(); if (current) show(pos); }
+  if (m === 'drill') { pause(); drillNext(); return; }
+  clearTimeout(drill.timer); drill.target = null; clearDrillMarks();
+  if (m === 'algs') { pause(); loadAlgs(); }
+  else if (current) show(pos);
 }
 onSeg('mode', setMode);
+
+// ---------- algorithms reference: every edge, corner and parity algorithm ----------
+let algData = null;
+async function loadAlgs() {
+  if (algData) return;
+  try {
+    const res = await fetch('/api/algs');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    algData = await res.json();
+  } catch (err) {
+    $('algs-body').replaceChildren(el('p', 'algs-empty', `Could not load the algorithms (${err.message}).`));
+    return;
+  }
+  renderAlgs();
+}
+function algTokens(r) {
+  const alg = el('span', 'alg');
+  // Dedicated algorithms (C, I, Q, S, W) are not setup + swap + undo: show them plain, M2 still marked.
+  for (const [part, role] of [[r.setup, 'setup'], [r.core, 'core'], [r.undo, 'undo']])
+    for (const m of part ? part.split(' ') : [])
+      alg.appendChild(el('span', 'tk ' + (r.special && m !== 'M2' ? 'plain' : role), m));
+  return alg;
+}
+function renderAlgs() {
+  if (!algData) return;
+  const q = $('alg-filter').value.trim().toLowerCase();
+  // A single character is a letter search; anything longer also matches sticker names and moves.
+  const hit = r => !q || (q.length === 1 ? r.letter.toLowerCase() === q
+    : [r.letter, r.sticker, r.alg].some(s => s.toLowerCase().includes(q)));
+  const group = (title, meta, rows, wide) => {
+    const g = el('div', 'group' + (wide ? ' wide' : ''));
+    const head = el('div', 'sec'); head.append(el('h3', null, title), el('span', 'meta', meta));
+    g.append(head);
+    if (!rows.length) g.append(el('p', 'algs-empty', 'No match.'));
+    g.append(...rows);
+    return g;
+  };
+  const pieceRow = (r, bufferNote) => {
+    const d = el('div', 'arow' + (r.buffer ? ' buffer' : ''));
+    d.append(el('span', 'badge', r.letter), el('span', 'stk', r.sticker),
+      r.buffer ? el('span', 'alg', bufferNote) : algTokens(r),
+      el('span', 'opp', r.opposite ? `→ ${r.opposite}` : ''));
+    return d;
+  };
+  const edges = algData.edges.filter(hit).map(r => pieceRow(r, 'buffer (DF)'));
+  const corners = algData.corners.filter(hit).map(r => pieceRow(r, 'buffer (UBL)'));
+  const parity = algData.parity
+    .filter(p => {
+      if (!q) return true;
+      if (q.length === 1) return q === 'p';     // "P" is how parity shows in the solution
+      return p.alg.toLowerCase().includes(q) || `parity ${p.number}`.includes(q);
+    })
+    .map(p => {
+      const d = el('div', 'arow par');
+      const alg = el('span', 'alg'); for (const m of p.alg.split(' ')) alg.appendChild(el('span', 'tk', m));
+      d.append(el('span', 'badge par', String(p.number)), alg,
+        el('span', 'opp', p.number === algData.default_parity ? 'default' : ''));
+      return d;
+    });
+  $('algs-body').replaceChildren(
+    group('Edges', 'M2 · buffer DF', edges),
+    group('Corners', 'Old Pochmann · buffer UBL', corners),
+    group('Parity', 'after an odd number of edge targets', parity, true));
+}
+$('alg-filter').addEventListener('input', renderAlgs);
 
 // keyboard: space play/pause, ←/→ step a move, shift+←/→ step a target, R random scramble
 // (in the letter drill: A–X answer, space / enter move on after a miss)
@@ -1142,13 +1258,17 @@ document.addEventListener('keydown', e => {
     else if ((e.key === ' ' || e.key === 'Enter') && drill.answered && !t?.closest('button')) { e.preventDefault(); drillNext(); }
     return;
   }
+  if (appMode === 'algs') {
+    if (e.key === '/') { e.preventDefault(); $('alg-filter').focus(); }
+    return;
+  }
   if (e.key === ' ') { if (t?.closest('button')) return; e.preventDefault(); play(); }
   else if (e.key === 'ArrowRight') { e.preventDefault(); e.shiftKey ? stepTarget(1) : step(1); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); e.shiftKey ? stepTarget(-1) : step(-1); }
   else if (e.key === 'r' || e.key === 'R') { $('scramble').value = ''; load(''); }
 });
 
-load('').then(() => { if (store.get('bld.mode', 'solve') === 'drill') setMode('drill'); });
+load('').then(() => { const m = store.get('bld.mode', 'solve'); if (m === 'drill' || m === 'algs') setMode(m); });
 </script>
 </body>
 </html>

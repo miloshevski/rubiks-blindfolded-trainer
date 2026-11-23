@@ -121,5 +121,23 @@ class Payload(unittest.TestCase):
             build_payload("R U", parity=9)
 
 
+class AlgorithmList(unittest.TestCase):
+    def test_matches_the_solver_tables(self):
+        from bld.method import CORNER_ALG, EDGE_ALG
+        from bld.server import algs_payload
+        p = algs_payload()
+        self.assertEqual([r["letter"] for r in p["edges"]], list("ABCDEFGHIJKLMNOPQRSTUVWX"))
+        self.assertEqual([r["letter"] for r in p["corners"]], list("ABCDEFGHIJKLMNOPQRSTUVWX"))
+        for table, algs in ((p["edges"], EDGE_ALG), (p["corners"], CORNER_ALG)):
+            for r in table:
+                if r.get("buffer"):
+                    self.assertNotIn(r["letter"], algs)
+                else:
+                    self.assertEqual(r["alg"], algs[r["letter"]])
+        self.assertEqual({r["letter"] for r in p["edges"] if r.get("buffer")}, {"K", "U"})
+        self.assertEqual({r["letter"] for r in p["corners"] if r.get("buffer")}, {"A", "E", "R"})
+        self.assertEqual(len(p["parity"]), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
