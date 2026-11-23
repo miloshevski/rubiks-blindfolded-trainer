@@ -117,7 +117,7 @@
   /* ---------- 2D net ---------- */
   .net { display: grid; grid-template-columns: repeat(4, 64px); grid-template-rows: repeat(3, 64px); gap: 5px; }
   .nf { display: grid; grid-template-columns: repeat(3, 20px); grid-template-rows: repeat(3, 20px); gap: 2px; }
-  .nf i { border-radius: 3px; display: flex; align-items: center; justify-content: center; font: normal 600 10px var(--mono); }
+  .nf i { border-radius: 3px; display: flex; align-items: center; justify-content: center; font: normal 600 10px var(--mono); color: #000; }
   .nf[data-f=U] { grid-area: 1 / 2; } .nf[data-f=L] { grid-area: 2 / 1; } .nf[data-f=F] { grid-area: 2 / 2; }
   .nf[data-f=R] { grid-area: 2 / 3; } .nf[data-f=B] { grid-area: 2 / 4; } .nf[data-f=D] { grid-area: 3 / 2; }
   .net .key { grid-area: 1 / 1; align-self: end; font: 10.5px/1.6 var(--mono); color: var(--ink-3); }
@@ -158,10 +158,9 @@
   .cubie { position: absolute; left: var(--c); top: var(--c); width: var(--c); height: var(--c); transform-style: preserve-3d; }
   .cubie > b { position: absolute; inset: 0; display: flex; background: var(--cube-body); border-radius: 4px; backface-visibility: hidden; }
   .cubie > b > i { flex: 1; margin: 3px; border-radius: 5px; }
-  /* Sticker letters (display only). Dark text on light stickers, light text on dark ones. */
+  /* Sticker letters (display only), always black on every sticker. */
   .cubie > b > i, .ghost i { display: flex; align-items: center; justify-content: center;
-    font: normal 600 calc(var(--c) * .34)/1 var(--sans); color: #16171a; }
-  .cubie > b > i.dark-sticker, .ghost i.dark-sticker, .nf i.dark-sticker { color: #fff; }
+    font: normal 600 calc(var(--c) * .34)/1 var(--sans); color: #000; }
   .cubie > .F { transform: translateZ(calc(var(--c) / 2)); }
   .cubie > .B { transform: rotateY(180deg) translateZ(calc(var(--c) / 2)); }
   .cubie > .R { transform: rotateY(90deg) translateZ(calc(var(--c) / 2)); }
@@ -513,7 +512,6 @@ const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch {
                 set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
 const cubeEl = $('cube');
 const COLORS = { U: 'var(--U)', D: 'var(--D)', F: 'var(--F)', B: 'var(--B)', R: 'var(--R)', L: 'var(--L)' };
-const DARK_STICKERS = 'FBR';          // green, blue, red get light text
 const Y_PERM = "R U' R' U' R U R' F' R U R' U' R' F R";
 
 // ---------- segmented controls ----------
@@ -590,7 +588,6 @@ function letterFor(view, face, i) {
 function paint(e, view, face, i) {
   const color = view.facelets[face][i];
   e.style.background = COLORS[color];
-  e.classList.toggle('dark-sticker', DARK_STICKERS.includes(color));
   e.textContent = letterFor(view, face, i);
 }
 // view = { facelets, letters } for one cube state; draws the 3D cube and the net.
