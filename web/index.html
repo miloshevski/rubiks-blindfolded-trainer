@@ -157,6 +157,7 @@
 
   /* 3D cube built from 26 cubies so single layers can turn. */
   #cube { width: calc(var(--c) * 3); height: calc(var(--c) * 3); position: relative; transform-style: preserve-3d; }
+  #cube.auto-turn { transition: transform .5s cubic-bezier(.3, .7, .2, 1); }   /* only while turning to a drill target */
   .layer { position: absolute; inset: 0; transform-style: preserve-3d; }
   .cubie { position: absolute; left: var(--c); top: var(--c); width: var(--c); height: var(--c); transform-style: preserve-3d; }
   .cubie > b { position: absolute; inset: 0; display: flex; background: var(--cube-body); border-radius: 4px; backface-visibility: hidden; }
@@ -720,14 +721,16 @@ function animateMove(move, ms) {
 // ---------- view rotation ----------
 const ROT0 = [-25, -35];
 let [rotX, rotY] = ROT0;
-const fmtDeg = v => `${Math.round(v) < 0 ? '−' : ''}${Math.abs(Math.round(v))}°`;
+// Readout only: both angles shown wrapped to −180…179° (the state itself keeps counting so turns stay smooth).
+const wrapDeg = v => ((Math.round(v) + 180) % 360 + 360) % 360 - 180;
+const fmtDeg = v => { const d = wrapDeg(v); return `${d < 0 ? '−' : ''}${Math.abs(d)}°`; };
 function applyRotation() {
   cubeEl.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-  $('rot-readout').innerHTML = `rx ${fmtDeg(rotX)}<br>ry ${fmtDeg(((rotY + 180) % 360 + 360) % 360 - 180)}`;
+  $('rot-readout').innerHTML = `rx ${fmtDeg(rotX)}<br>ry ${fmtDeg(rotY)}`;
 }
 (() => {
   const stage = $('stage'); let drag = null;
-  stage.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY]; stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener('pointerdown', e => { stopAutoTurn(); drag = [e.clientX, e.clientY]; stage.setPointerCapture(e.pointerId); });
   stage.addEventListener('pointermove', e => {
     if (!drag) return;
     rotY += (e.clientX - drag[0]) * 0.6; rotX -= (e.clientY - drag[1]) * 0.6;
@@ -740,7 +743,7 @@ function applyRotation() {
   // ctrlKey marks a pinch, which is left to the browser.
   stage.addEventListener('wheel', e => {
     if (e.ctrlKey) return;
-    e.preventDefault();
+    e.preventDefault(); stopAutoTurn();
     const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;   // lines / pages → px
     rotY -= e.deltaX * k * 0.2; rotX += e.deltaY * k * 0.2;
     applyRotation();
@@ -748,6 +751,41 @@ function applyRotation() {
 })();
 $('reset-view').addEventListener('click', () => { [rotX, rotY] = ROT0; applyRotation(); });
 applyRotation();
+
+// Turning to a face (letter drill). The cube transform is rotateX(rotX) rotateY(rotY); a face's
+// outward normal points at the viewer when its z after both rotations is positive.
+const FACE_NORMAL = { F: [0, 0, 1], B: [0, 0, -1], R: [1, 0, 0], L: [-1, 0, 0], U: [0, -1, 0], D: [0, 1, 0] };
+const FACE_YAW = { F: 0, R: -90, B: 180, L: 90 };       // rotY that shows a side face head-on
+const rad = d => d * Math.PI / 180;
+function faceFacing(face, x = rotX, y = rotY) {          // 1 = head-on, ≤ 0 = hidden
+  const [nx, ny, nz] = FACE_NORMAL[face];
+  const z1 = -nx * Math.sin(rad(y)) + nz * Math.cos(rad(y));
+  return ny * Math.sin(rad(x)) + z1 * Math.cos(rad(x));
+}
+const nearestTurn = (target, from) => target + 360 * Math.round((from - target) / 360);
+let turnTimer = 0;
+function stopAutoTurn() { clearTimeout(turnTimer); cubeEl.classList.remove('auto-turn'); }
+// Leave the view alone if the face is already well in sight; otherwise turn the shortest way
+// to a 3/4 view of it (side faces 30° off head-on with the top showing, U / D tilted 50°).
+function showFace(face) {
+  if (faceFacing(face) >= 0.5) return;
+  let x, y;
+  if (face === 'U' || face === 'D') {     // tilt, and swing to the nearest corner-on yaw (−35° + 90°k)
+    x = nearestTurn(face === 'U' ? -50 : 50, rotX);
+    y = ROT0[1] + 90 * Math.round((rotY - ROT0[1]) / 90);
+  }
+  else {
+    const a = nearestTurn(FACE_YAW[face] - 30, rotY), b = nearestTurn(FACE_YAW[face] + 30, rotY);
+    y = Math.abs(a - rotY) <= Math.abs(b - rotY) ? a : b;
+    x = nearestTurn(-25, rotX);
+  }
+  stopAutoTurn();
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    cubeEl.classList.add('auto-turn');
+    turnTimer = setTimeout(stopAutoTurn, 600);
+  }
+  rotX = x; rotY = y; applyRotation();
+}
 
 // ---------- solution text -> rows of tokens (display only; the text itself is unchanged) ----------
 // Each row: { kind, letter, exec, moves: [{ m, role }] }, roles: setup / core (the swap) / undo / plain.
@@ -1137,6 +1175,7 @@ function drillNext() {
   const t = pool[Math.floor(Math.random() * pool.length)];
   drill.target = t; drill.prev = t.face + t.i; drill.answered = false; drill.shownAt = performance.now();
   draw(solvedView());
+  showFace(t.face);
   clearDrillMarks();
   for (const e of stickerEls[t.face + t.i]) e.classList.add('drill-target');
   $('drill-answer').textContent = '?'; $('drill-answer').className = '';
