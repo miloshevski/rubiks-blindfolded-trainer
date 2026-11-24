@@ -10,8 +10,8 @@ const MODES: readonly SegOption<AppMode>[] = [
 ];
 
 const PARITY: readonly SegOption<ParityAlg>[] = [
-  { value: '1', title: "M2 U' M U2 M U' M' U2 M' U2", label: <><span className="font-mono">1</span> · M2 U' M U2…</> },
-  { value: '2', title: "D' L2 D M2 D' L2 D", label: <><span className="font-mono">2</span> · D' L2 D…</> },
+  { value: '1', title: "D' L2 D M2 D' L2 D", label: <><span className="font-mono">1</span> · D' L2 D…</> },
+  { value: '2', title: "M2 U' M U2 M U' M' U2 M' U2", label: <><span className="font-mono">2</span> · M2 U' M U2…</> },
 ];
 
 const brand = (
