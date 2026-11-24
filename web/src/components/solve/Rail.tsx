@@ -48,7 +48,7 @@ export function Rail({ tab, current, edgeRows, hasParity, view, pos, letterMode,
       </RailSection>
       <RailSection tab="check" active={tab}>
         <SectionHead title="Recall check" meta="letters as executed" tight />
-        <RecallCheck outcome={outcome} parityAlg={parityAlg} onCheck={onCheck} onRender={onRenderMine} />
+        <RecallCheck outcome={outcome} parityAlg={parityAlg} edgeMemo={current?.edge_memo ?? ''} cornerMemo={current?.corner_memo ?? ''} onCheck={onCheck} onRender={onRenderMine} />
       </RailSection>
     </aside>
   );

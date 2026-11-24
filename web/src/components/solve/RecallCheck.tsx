@@ -1,22 +1,29 @@
-import { useState, type FormEvent } from 'react';
+import { lazy, Suspense, useState, type FormEvent } from 'react';
 import type { PracticeOutcome } from '../../hooks/usePractice';
 import type { CheckResult, ParityAlg } from '../../lib/types';
 import { Button } from '../ui/Button';
 import { IconBad, IconOk } from '../ui/icons';
 import { INPUT, Meta } from '../ui/text';
 
+// The dictionary is only fetched the first time the pairs are shown.
+const PairWords = lazy(() => import('./PairWords'));
+
 interface Props {
   outcome: PracticeOutcome;
   parityAlg: ParityAlg;
+  /** The computer's memo letters, used by the Pairs box while nothing is typed. */
+  edgeMemo: string;
+  cornerMemo: string;
   onCheck: (edges: string, corners: string, parity: boolean) => void;
   onRender: () => void;
 }
 
 /** Type the solution as executed; the server runs it on the scramble and says what is wrong. */
-export function RecallCheck({ outcome, parityAlg, onCheck, onRender }: Props) {
+export function RecallCheck({ outcome, parityAlg, edgeMemo, cornerMemo, onCheck, onRender }: Props) {
   const [edges, setEdges] = useState('');
   const [corners, setCorners] = useState('');
   const [parity, setParity] = useState(false);
+  const [showPairs, setShowPairs] = useState(false);
   const result = outcome?.ok ? outcome.result : null;
 
   const submit = (e: FormEvent) => { e.preventDefault(); onCheck(edges, corners, parity); };
@@ -43,11 +50,14 @@ export function RecallCheck({ outcome, parityAlg, onCheck, onRender }: Props) {
             Parity <Meta>alg {parityAlg}</Meta>
           </label>
           <div className="flex gap-2">
+            <Button aria-pressed={showPairs} onClick={() => setShowPairs(v => !v)}
+                    className={showPairs ? 'border-accent text-accent' : undefined}>Pairs</Button>
             <Button disabled={!result} onClick={onRender}>Render mine</Button>
             <Button type="submit" variant="primary">Check</Button>
           </div>
         </div>
       </form>
+      {showPairs ? <Suspense fallback={null}><PairWords edges={edges} corners={corners} fallbackEdges={edgeMemo} fallbackCorners={cornerMemo} /></Suspense> : null}
       {outcome ? (
         <div className="mt-4 border-t border-rule pt-3.5" aria-live="polite">
           {outcome.ok ? <Verdict result={outcome.result} /> : <div className={VERDICT_BAD}>{IconBad}{outcome.error}</div>}
