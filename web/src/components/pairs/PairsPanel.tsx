@@ -40,29 +40,33 @@ interface CellProps {
   cross: boolean;
   /** The hovered cell itself. */
   focus: boolean;
+  /** Matching a non-empty filter: highlighted like the hovered cell. */
+  hit: boolean;
+  /** The filter is exactly this pair's letters (e.g. "fe"): filled solid, apart from the other matches. */
+  exact: boolean;
 }
 
 // Memoized on primitives: moving the pointer only re-renders the cells whose state changed.
-const Cell = memo(function Cell({ r, c, word, dim, cross, focus }: CellProps) {
+const Cell = memo(function Cell({ r, c, word, dim, cross, focus, hit, exact }: CellProps) {
   const code = LETTERS[r] + LETTERS[c];
   return (
     <td data-r={r} data-c={c} title={`${code} · ${word}`}
         className={cn(
-          'relative h-12 border-b border-r px-1.5 pt-1 align-top transition-opacity duration-[120ms]',
+          'relative h-12 pairs-cursor border-b border-r px-1.5 pt-1 align-top transition-opacity duration-[120ms]',
           edgeRight(c), edgeBottom(r),
-          focus ? 'bg-accent-bg' : cross ? 'bg-raise' : 'bg-transparent',
+          exact ? 'bg-accent' : focus || hit ? 'bg-accent-bg' : cross ? 'bg-raise' : 'bg-transparent',
+          hit && 'z-[1] ring-inset ring-accent', exact ? 'ring-2' : hit && 'ring-1',
           dim && 'opacity-20',
         )}>
-      <div className={cn('font-mono text-[9px] leading-none', focus ? 'text-accent' : 'text-ink-3')}>{code}</div>
-      <div className="mt-0.5 line-clamp-2 text-[11px] leading-[1.2] break-words text-ink">{word}</div>
-      {/* The hovered cell pops out as a small card just above it (below, for the first row, which has the
-          sticky header over it), so the pointer never covers the word and the grid never reflows. Cells in the
-          first/last columns anchor to their edge so the scroll area does not clip the card. */}
+      <div className={cn('font-mono leading-none', hit ? 'text-[10px] font-semibold' : 'text-[9px]', exact ? 'text-bg' : focus || hit ? 'text-accent' : 'text-ink-3')}>{code}</div>
+      <div className={cn('mt-0.5 line-clamp-2 break-words', exact ? 'text-bg' : 'text-ink', hit ? 'text-[13px] leading-[1.15] font-medium' : 'text-[11px] leading-[1.2]')}>{word}</div>
+      {/* The hovered cell pops out like a small card above the table, so the grid never reflows.
+          Cells on the first/last rows and columns anchor to their edge so the scroll area does not clip it. */}
       {focus ? (
         <div aria-hidden
              className={cn(
                'pointer-events-none absolute z-[5] w-max min-w-[140px] max-w-[240px] animate-[pop_120ms_ease-out] rounded-md bg-bg px-4 py-3 shadow-[0_8px_28px_rgba(0,0,0,.45)] ring-1 ring-accent',
-               r === 0 ? 'top-full mt-1.5' : 'bottom-full mb-1.5',
+               r === 0 ? 'top-0' : r === 23 ? 'bottom-0' : 'top-1/2 -translate-y-1/2',
                c < 2 ? 'left-0' : c > 21 ? 'right-0' : 'left-1/2 -translate-x-1/2',
              )}>
           <div className="font-mono text-[13px] leading-none font-semibold text-accent">{code}</div>
@@ -127,7 +131,8 @@ export function PairsPanel({ filterRef }: Props) {
               <tr key={a}>
                 <Head i={r} scope="row" hot={at?.[0] === r} />
                 {LETTERS.map((b, c) => (
-                  <Cell key={b} r={r} c={c} word={WORDS[a + b]} dim={!matches(a + b, WORDS[a + b], q)}
+                  <Cell key={b} r={r} c={c} word={WORDS[a + b]} dim={!matches(a + b, WORDS[a + b], q)} hit={!!q && matches(a + b, WORDS[a + b], q)}
+                        exact={!!q && (a + b).toLowerCase() === q}
                         cross={!!at && (at[0] === r || at[1] === c)} focus={at?.[0] === r && at?.[1] === c} />
                 ))}
               </tr>
