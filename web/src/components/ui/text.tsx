@@ -10,7 +10,7 @@ export function Meta({ children, className, id }: { children?: ReactNode; classN
 export const HEADING = 'm-0 text-[12px] font-semibold';
 
 /** Text field look without right padding, so a caller can set its own without a class conflict. */
-export const FIELD = 'h-9 w-full rounded border border-line bg-sunk pl-3 font-mono text-[14px] tracking-[.01em] text-ink outline-none '
+export const FIELD = 'h-9 touch:h-11 w-full rounded border border-line bg-sunk pl-3 font-mono text-[14px] tracking-[.01em] text-ink outline-none '
   + 'transition-colors duration-[120ms] placeholder:text-ink-3 hover:border-line-2 focus:border-ink aria-invalid:border-bad-edge';
 /** A plain single-line input. */
 export const INPUT = `${FIELD} pr-3 leading-[normal]`;

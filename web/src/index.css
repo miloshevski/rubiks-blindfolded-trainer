@@ -77,5 +77,27 @@
   @media (width >= 1280px) {
     #root { height: 100vh; overflow: hidden; }
   }
+  /* Tablet portrait: the cube spans the full width; a little smaller so the floating faces fit. */
+  @media (pointer: coarse) and (760px <= width < 1280px) and (orientation: portrait) {
+    :root { --c: 60px; }
+  }
+  /* Tablet landscape: fits the screen like wide desktop (dvh: the toolbar may come and go). */
+  @media (pointer: coarse) and (760px <= width < 1280px) and (orientation: landscape) {
+    #root { height: 100dvh; overflow: hidden; }
+    /* The exploded cube is ~6.1 cubies tall; the stage gets what the header, bars and
+       transport (~430px) leave of the screen height, with room for the line under the cube. */
+    :root { --c: clamp(40px, calc((100dvh - 470px) / 6.1), 72px); }
+  }
   :focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
 }
+
+/*
+ * Tablets = touch screens (pointer: coarse) between the phone and wide-desktop breakpoints.
+ * Keyed on the pointer, not just the width, so a narrow desktop browser window keeps the
+ * desktop layout and phones (< 760px) keep theirs.
+ */
+@custom-variant tablet (@media (pointer: coarse) and (760px <= width < 1280px));
+@custom-variant tablet-portrait (@media (pointer: coarse) and (760px <= width < 1280px) and (orientation: portrait));
+@custom-variant tablet-landscape (@media (pointer: coarse) and (760px <= width < 1280px) and (orientation: landscape));
+/* Finger-sized controls on any touch screen from tablet width up (big tablets use the desktop layout). */
+@custom-variant touch (@media (pointer: coarse) and (width >= 760px));

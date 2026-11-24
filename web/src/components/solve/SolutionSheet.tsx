@@ -55,7 +55,7 @@ export function SolutionSheet({ tab, sections, parityAlg, moveCount, verified, s
 
   let n = 0, start = 0;
   return (
-    <section className={cn('flex min-h-0 min-w-0 flex-col [grid-area:sheet]', tabVisibility('solution', tab, 'flex'))}>
+    <section className={cn('flex min-h-0 min-w-0 flex-col [grid-area:sheet] tablet-landscape:[grid-area:panel]', tabVisibility('solution', tab, 'flex'))}>
       <Bar title="Solution" meta={<Meta>{moveCount == null ? '' : `${moveCount} moves`}</Meta>}>
         {verified == null ? null : (
           <span className={cn('inline-flex items-center gap-1.5 text-[12px]', verified ? 'text-ok' : 'text-bad')}>
@@ -65,7 +65,7 @@ export function SolutionSheet({ tab, sections, parityAlg, moveCount, verified, s
         <Button size="sm" onClick={copy}>{copyLabel}</Button>
       </Bar>
       {LEGEND}
-      <div ref={scroller} className="flex-[1_1_auto] overflow-auto pt-1.5 pb-4 max-xl:overflow-visible">
+      <div ref={scroller} className="flex-[1_1_auto] overflow-auto pt-1.5 pb-4 max-xl:overflow-visible tablet-landscape:overflow-auto">
         {sections.map(sec => {
           const moves = sec.rows.reduce((a, r) => a + r.moves.length, 0);
           const [title, sub] = sec.kind === 'edges' ? ['Edges', 'M2'] : sec.kind === 'parity' ? ['Parity', `alg ${parityAlg}`] : ['Corners', 'Old Pochmann'];
@@ -111,7 +111,7 @@ const SolutionRowButton = memo(function SolutionRowButton({ number, parity, lett
   return (
     <button type="button" title={`Jump to ${parity ? 'parity' : letter}`} onClick={() => onJump(start)} data-current={cur || undefined}
             className={cn(
-              'grid w-full cursor-pointer grid-cols-[22px_24px_minmax(0,1fr)_26px] items-baseline gap-x-3 border-0 px-5 py-[5px] text-left',
+              'grid w-full cursor-pointer grid-cols-[22px_24px_minmax(0,1fr)_26px] items-baseline gap-x-3 border-0 px-5 py-[5px] text-left touch:py-2',
               'focus-visible:-outline-offset-2 max-md:grid-cols-[24px_minmax(0,1fr)_22px] max-md:px-4',
               cur ? 'bg-row-current shadow-[inset_0_1px_0_#26282b,inset_0_-1px_0_#26282b]' : 'bg-transparent hover:bg-row-hover',
             )}>

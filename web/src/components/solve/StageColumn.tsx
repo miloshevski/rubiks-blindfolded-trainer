@@ -41,7 +41,8 @@ export function StageColumn({
   const { pos, frames, segments } = playback;
   return (
     <section className={cn('flex min-w-0 flex-col border-r border-rule [grid-area:stage] max-xl:border-r-0',
-      drill ? 'max-xl:border-b-0' : 'max-xl:border-b')}>
+      drill ? 'max-xl:border-b-0 tablet-portrait:border-b' : 'max-xl:border-b',
+      'tablet-landscape:min-h-0 tablet-landscape:border-r tablet-landscape:border-b-0')}>
       <Bar title="Cube" meta={<span className="text-[12px] text-ink-3 max-md:hidden">Drag or two-finger swipe to rotate · hidden faces float behind</span>}>
         {drill ? null : (
           <>

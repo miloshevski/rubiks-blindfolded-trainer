@@ -37,7 +37,7 @@ export function RecallCheck({ outcome, parityAlg, onCheck, onRender }: Props) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <label className="inline-flex cursor-pointer items-center gap-2 text-[12.5px]" title="Uses the parity algorithm selected in the bar">
             <input type="checkbox" checked={parity} onChange={e => setParity(e.target.checked)}
-                   className="m-0 inline-grid size-4 cursor-pointer appearance-none place-content-center rounded-[3px] border border-edge-2 bg-sunk
+                   className="m-0 inline-grid size-4 touch:size-5 cursor-pointer appearance-none place-content-center rounded-[3px] border border-edge-2 bg-sunk
                               checked:border-ink checked:bg-ink checked:after:h-1 checked:after:w-2 checked:after:-translate-y-px
                               checked:after:-rotate-45 checked:after:border-b-2 checked:after:border-l-2 checked:after:border-bg checked:after:content-['']" />
             Parity <Meta>alg {parityAlg}</Meta>

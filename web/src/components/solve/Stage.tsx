@@ -22,7 +22,8 @@ export function Stage({ cubeRef, rotation, view, letterMode, absoluteLetters, ma
   return (
     <div ref={rotation.stageRef}
          className="relative flex min-h-[520px] flex-[1_1_auto] cursor-grab touch-none items-center justify-center overflow-hidden
-                    perspective-[1100px] select-none active:cursor-grabbing max-md:min-h-[330px] max-md:perspective-[700px]">
+                    perspective-[1100px] select-none active:cursor-grabbing max-md:min-h-[330px] max-md:perspective-[700px]
+                    tablet-portrait:min-h-[400px] tablet-landscape:min-h-0">
       <div ref={rotation.readoutRef} className={`${READOUT} left-5`} />
       <div className={`${READOUT} right-5 text-right`}>{modeReadout}<br />exploded 2.4×</div>
       <Cube3D ref={cubeRef} elementRef={rotation.cubeRef} view={view} letterMode={letterMode}

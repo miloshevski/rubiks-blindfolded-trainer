@@ -76,7 +76,7 @@ export function DrillPanel({ drill }: { drill: Drill }) {
             const mark = typed === null ? null : l === target?.letter ? 'ok' : l === typed ? 'bad' : null;
             return (
               <button key={l} type="button" aria-label={`Answer ${l}`} onClick={() => drill.answer(l)}
-                      className={cn('h-10 cursor-pointer rounded border bg-raise font-mono text-[15px] leading-[normal] font-medium transition-[background-color,border-color] duration-[120ms] hover:bg-raise-2 max-md:h-11',
+                      className={cn('h-10 cursor-pointer rounded border bg-raise font-mono text-[15px] leading-[normal] font-medium transition-[background-color,border-color] duration-[120ms] hover:bg-raise-2 max-md:h-11 touch:h-12',
                         mark === 'ok' ? 'border-ok text-ok' : mark === 'bad' ? 'border-bad-edge text-bad' : 'border-edge text-ink hover:border-edge-2')}>
                 {l}
               </button>

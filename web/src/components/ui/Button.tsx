@@ -8,7 +8,7 @@ const VARIANT = {
     + 'disabled:border-rule disabled:text-ink-3',
   primary: 'border-ink bg-ink text-bg enabled:hover:border-white enabled:hover:bg-white',
 };
-const SIZE = { md: 'h-8 px-3 text-[13px]', sm: 'h-7 px-2.5 text-[12px]' };
+const SIZE = { md: 'h-8 px-3 text-[13px] touch:h-10', sm: 'h-7 px-2.5 text-[12px] touch:h-9' };
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof VARIANT;

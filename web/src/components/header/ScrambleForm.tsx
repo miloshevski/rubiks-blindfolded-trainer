@@ -41,8 +41,8 @@ export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onR
         <textarea ref={box} id="scramble" rows={1} value={value} onChange={e => onChange(e.target.value)} onKeyDown={keyDown}
                   placeholder="Paste a scramble, or leave empty for a random one" autoComplete="off" spellCheck={false}
                   aria-describedby="msg" aria-invalid={invalid || undefined}
-                  className={`${FIELD} block h-9 min-h-9 resize-none overflow-hidden py-[7px] pr-[84px] leading-5 whitespace-pre max-md:whitespace-pre-wrap`} />
-        <span className="absolute top-0 right-3 font-mono text-[11px] leading-9 text-ink-3">{moveCount == null ? '' : `${moveCount} moves`}</span>
+                  className={`${FIELD} block h-9 min-h-9 resize-none overflow-hidden py-[7px] pr-[84px] leading-5 touch:min-h-11 touch:py-[11px] whitespace-pre max-md:whitespace-pre-wrap`} />
+        <span className="absolute top-0 right-3 font-mono text-[11px] leading-9 text-ink-3 touch:leading-11">{moveCount == null ? '' : `${moveCount} moves`}</span>
       </div>
       <Button title="New random scramble (R)" onClick={onRandom} className="max-md:h-11 max-md:flex-[1_1_0]">
         Random <Kbd>R</Kbd>

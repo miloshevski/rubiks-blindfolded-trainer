@@ -28,12 +28,19 @@ const DRILL_KEY = /^[a-x]$/i;
 
 // Workbench grid per mode. Phone: one column (in Solve: cube, tabs, then the active section);
 // medium: rail beside cube over solution; wide (≥1280px): rail | cube | solution.
+// Tablets (touch, 760–1279px): Solve uses the section tabs too, with the cube full width above
+// them in portrait, or beside them (each pane scrolling, fit to the screen) in landscape;
+// the letter drill stacks under the cube in portrait.
 const LAYOUT: Record<AppMode, string> = {
   solve: 'grid-cols-[minmax(0,1fr)] [grid-template-areas:"stage"_"tabs"_"rail"_"sheet"] '
     + 'md:grid-cols-[minmax(280px,330px)_minmax(0,1fr)] md:[grid-template-areas:"rail_stage"_"rail_sheet"] '
-    + 'xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)_minmax(440px,580px)] xl:[grid-template-areas:"rail_stage_sheet"]',
+    + 'xl:grid-cols-[minmax(300px,340px)_minmax(0,1fr)_minmax(440px,580px)] xl:[grid-template-areas:"rail_stage_sheet"] '
+    + 'tablet-portrait:grid-cols-[minmax(0,1fr)] tablet-portrait:[grid-template-areas:"stage"_"tabs"_"rail"_"sheet"] '
+    + 'tablet-landscape:grid-cols-[minmax(0,1fr)_minmax(360px,42%)] tablet-landscape:grid-rows-[auto_minmax(0,1fr)] '
+    + 'tablet-landscape:[grid-template-areas:"stage_tabs"_"stage_panel"]',
   drill: 'grid-cols-[minmax(0,1fr)] [grid-template-areas:"stage"_"drill"] '
-    + 'md:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] md:[grid-template-areas:"stage_drill"]',
+    + 'md:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] md:[grid-template-areas:"stage_drill"] '
+    + 'tablet-portrait:grid-cols-[minmax(0,1fr)] tablet-portrait:[grid-template-areas:"stage"_"drill"]',
   algs: 'grid-cols-[minmax(0,1fr)] [grid-template-areas:"algs"]',
 };
 

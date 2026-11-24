@@ -34,7 +34,8 @@ interface Props {
 /** Left column of Solve mode: memo, unfolded cube, recall check. */
 export function Rail({ tab, current, edgeRows, hasParity, view, pos, letterMode, outcome, parityAlg, onCheck, onRenderMine }: Props) {
   return (
-    <aside className="overflow-auto border-r border-rule [grid-area:rail] max-xl:overflow-visible max-md:border-r-0">
+    <aside className="overflow-auto border-r border-rule [grid-area:rail] max-xl:overflow-visible max-md:border-r-0
+                      tablet:border-r-0 tablet-landscape:overflow-auto tablet-landscape:[grid-area:panel]">
       <RailSection tab="memo" active={tab}>
         <SectionHead title="Memo" meta={current ? memoTargets(current.edge_memo, current.corner_memo) : ''} />
         {current ? (

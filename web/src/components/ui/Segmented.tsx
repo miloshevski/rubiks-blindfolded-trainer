@@ -3,7 +3,7 @@ import { cn } from '../../lib/cn';
 
 export const SEG_GROUP = 'inline-flex gap-0.5 rounded-[5px] border border-line bg-sunk p-0.5';
 /** A segment button without horizontal padding (callers add their own, see SEG_BUTTON). */
-export const SEG_BUTTON_BASE = 'h-[26px] cursor-pointer rounded-[3px] bg-transparent text-[12.5px] whitespace-nowrap text-ink-2 '
+export const SEG_BUTTON_BASE = 'h-[26px] touch:h-9 cursor-pointer rounded-[3px] bg-transparent text-[12.5px] whitespace-nowrap text-ink-2 '
   + 'transition-colors duration-[120ms] enabled:hover:text-ink aria-pressed:bg-pressed aria-pressed:text-ink '
   + 'disabled:cursor-default disabled:text-disabled';
 export const SEG_BUTTON = `${SEG_BUTTON_BASE} px-2.5`;
