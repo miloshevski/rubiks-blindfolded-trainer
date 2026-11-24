@@ -1,3 +1,4 @@
+import { translate } from './local';
 import { FACES, type CubeView, type Face, type FaceStrings, type LetterMode } from './types';
 
 // 3D cube: 26 cubies at (x, y, z) in {-1, 0, 1}; y is up, z is towards the front.
@@ -98,7 +99,7 @@ export function stickerLetter(
   if (!view || mode === 'off') return '';
   const src = mode === 'absolute' ? absolute : view.letters;
   const ch = src?.[face][i];
-  return ch && ch !== '.' ? ch : '';
+  return ch && ch !== '.' ? translate(ch, i % 2 ? 'edges' : 'corners') : '';
 }
 
 /** The 24 Speffz letters, in order: four per face, U L F R B D. */
@@ -108,3 +109,5 @@ export const SOLVED_FACELETS = Object.fromEntries(FACES.map(f => [f, f.repeat(9)
 
 /** Key of one sticker, e.g. "U3". */
 export const stickerKey = (face: Face, i: number) => `${face}${i}`;
+
+export const ABSOLUTE_LETTERS: FaceStrings = {"U": "AABD.BDCC", "R": "MMNP.NPOO", "F": "IIJL.JLKK", "D": "UUVX.VXWW", "L": "EEFH.FHGG", "B": "QQRT.RTSS"};

@@ -87,10 +87,12 @@ export function usePlayback({ current, practice, refRows, speed, cube }: Args) {
     const fr = framesOf(sourceRef.current) ?? [];
     if (d > 0 && posRef.current < fr.length && !busy.current) {
       busy.current = true;
+      const mine = token.current;
       await cube.current?.turn(fr[posRef.current].move, 120);
       busy.current = false;
+      if (mine !== token.current) { cube.current?.settle(); return; }
       show(posRef.current + 1);
-    } else show(posRef.current + d);
+    } else if (d < 0) show(posRef.current + d);
   }, [cube, framesOf, latest, pause, show]);
 
   /** Jumps to the start of the next target, or back to the start of this / the previous one. */
@@ -99,7 +101,7 @@ export function usePlayback({ current, practice, refRows, speed, cube }: Args) {
     setStatus(null);
     const segs = segmentsOf(sourceRef.current), p = posRef.current;
     if (d > 0) {
-      const next = segs.find(s => s.start >= p);
+      const next = segs.find(s => s.start > p);
       show(next ? next.start : (framesOf(sourceRef.current) ?? []).length);
       return;
     }

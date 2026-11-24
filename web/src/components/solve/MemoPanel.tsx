@@ -1,3 +1,4 @@
+import { translate } from '../../lib/local';
 import type { SolutionRow } from '../../lib/solution';
 import { Pill } from '../ui/text';
 
@@ -45,7 +46,7 @@ export function MemoPanel({ edgeMemo, cornerMemo, edgeRows, hasParity }: Props) 
     <div className="grid grid-cols-[56px_minmax(0,1fr)] items-baseline gap-y-3.5">
       <span className="text-[12px] text-ink-3">Edges</span>
       <div>
-        <MemoLetters memo={edgeMemo} rows={edgeRows} parity={hasParity} />
+        <MemoLetters memo={translate(edgeMemo, 'edges')} rows={edgeRows} parity={hasParity} />
         {subs.length ? (
           <p className="mt-1.5 text-[11.5px] text-ink-3">
             <b className="font-mono text-[11.5px] leading-[normal] font-normal text-ink-2">{subs.map(r => `${r.letter} → ${r.exec}`).join('  ')}</b>
@@ -54,7 +55,7 @@ export function MemoPanel({ edgeMemo, cornerMemo, edgeRows, hasParity }: Props) 
         ) : null}
       </div>
       <span className="text-[12px] text-ink-3">Corners</span>
-      <MemoLetters memo={cornerMemo} />
+      <MemoLetters memo={translate(cornerMemo, 'corners')} />
     </div>
   );
 }

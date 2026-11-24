@@ -20,8 +20,10 @@ class StaticFiles(unittest.TestCase):
     def test_app_routes_serve_index(self):
         index = server.static_file("/")
         for path in server.APP_ROUTES:
-            self.assertEqual(server.static_file(path), index, path)
-            self.assertEqual(server.static_file(path + "/"), index, path)
+            candidate = os.path.join(server.DIST_DIR, path.lstrip("/"), "index.html")
+            expected = candidate if os.path.isfile(candidate) else index
+            self.assertEqual(server.static_file(path), expected, path)
+            self.assertEqual(server.static_file(path + "/"), expected, path)
 
     def test_missing_file(self):
         self.assertIsNone(server.static_file("/no-such-file.js"))

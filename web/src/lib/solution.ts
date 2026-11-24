@@ -1,3 +1,4 @@
+import { translate } from './local';
 import type { Frame } from './types';
 
 export const Y_PERM = "R U' R' U' R U R' F' R U R' U' R' F R";
@@ -53,7 +54,7 @@ export function parseSolution(text: string): SolutionSection[] {
     const m = line.match(TARGET_LINE);
     if (m && sec.kind !== 'parity') { letter = m[1]; alg = m[2]; exec = m[3] ?? null; }
     const toks = alg.trim().split(/\s+/).filter(Boolean);
-    sec.rows.push({ kind: sec.kind, letter: letter || 'P', exec, moves: moveRoles(sec.kind, toks) });
+    sec.rows.push({ kind: sec.kind, letter: sec.kind === 'parity' ? 'P' : translate(letter || 'P', sec.kind), exec: exec && sec.kind !== 'parity' ? translate(exec, sec.kind) : exec, moves: moveRoles(sec.kind, toks) });
   }
   return sections;
 }
@@ -82,9 +83,10 @@ export function frameSegments(frames: Frame[]): Segment[] {
   const out: (Segment & { label: string })[] = [];
   frames.forEach((f, i) => {
     const last = out[out.length - 1];
-    if (last && last.label === f.label) { last.end = i + 1; return; }
+    const identity = f.step === undefined ? f.label : `${f.step}:${f.label}`;
+    if (last && last.label === identity) { last.end = i + 1; return; }
     const [ph, letter] = f.label.split(' ');
-    out.push({ label: f.label, phase: ph.toLowerCase() as Phase, letter: letter || 'P', exec: null, start: i, end: i + 1 });
+    out.push({ label: identity, phase: ph.toLowerCase() as Phase, letter: ph === 'Parity' ? 'P' : translate(letter || 'P', ph === 'Edges' ? 'edges' : 'corners'), exec: null, start: i, end: i + 1 });
   });
   return out;
 }
@@ -101,4 +103,14 @@ export function phaseRuns(segments: Segment[]) {
     else runs.push({ phase: s.phase, moves: s.end - s.start });
   }
   return runs;
+}
+
+/** Translate target labels without ever rewriting face-turn notation. */
+export function displaySolution(text: string) {
+  let kind: 'edges' | 'corners' = 'edges';
+  return text.split('\n').map(line => {
+    if (line === 'Corners:') kind = 'corners';
+    return line.replace(/^([A-X]):/, (_, letter: string) => `${translate(letter, kind)}:`)
+      .replace(/# executed as ([A-X])/, (_, letter: string) => `# executed as ${translate(letter, kind)}`);
+  }).join('\n');
 }

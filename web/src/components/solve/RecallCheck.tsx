@@ -9,6 +9,7 @@ import { INPUT, Meta } from '../ui/text';
 const PairWords = lazy(() => import('./PairWords'));
 
 interface Props {
+  hideMemo?: boolean;
   outcome: PracticeOutcome;
   parityAlg: ParityAlg;
   /** The computer's memo letters, used by the Pairs box while nothing is typed. */
@@ -19,7 +20,7 @@ interface Props {
 }
 
 /** Type the solution as executed; the server runs it on the scramble and says what is wrong. */
-export function RecallCheck({ outcome, parityAlg, edgeMemo, cornerMemo, onCheck, onRender }: Props) {
+export function RecallCheck({ outcome, parityAlg, edgeMemo, cornerMemo, onCheck, onRender, hideMemo }: Props) {
   const [edges, setEdges] = useState('');
   const [corners, setCorners] = useState('');
   const [parity, setParity] = useState(false);
@@ -57,7 +58,7 @@ export function RecallCheck({ outcome, parityAlg, edgeMemo, cornerMemo, onCheck,
           </div>
         </div>
       </form>
-      {showPairs ? <Suspense fallback={null}><PairWords edges={edges} corners={corners} fallbackEdges={edgeMemo} fallbackCorners={cornerMemo} /></Suspense> : null}
+      {showPairs ? <Suspense fallback={null}><PairWords edges={edges} corners={corners} fallbackEdges={hideMemo ? '' : edgeMemo} fallbackCorners={hideMemo ? '' : cornerMemo} /></Suspense> : null}
       {outcome ? (
         <div className="mt-4 border-t border-rule pt-3.5" aria-live="polite">
           {outcome.ok ? <Verdict result={outcome.result} /> : <div className={VERDICT_BAD}>{IconBad}{outcome.error}</div>}

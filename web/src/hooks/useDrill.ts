@@ -1,4 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { translate } from '../lib/local';
+import { recordAttempt } from '../lib/review';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DrillMarks } from '../components/cube/Cube3D';
 import { stickerKey } from '../lib/cube';
 import { pickTarget, type DrillTarget, type StickerSet } from '../lib/drill';
@@ -42,12 +44,15 @@ export function useDrill(letters: FaceStrings | null, showFace: (face: Face) => 
   const shownAt = useRef(0);
   const timer = useRef(0);
 
+  useEffect(() => () => clearTimeout(timer.current), []);
+
   /** Next random target from the current faces and sticker set. */
   const next = useCallback(() => {
     clearTimeout(timer.current);
     const l = latest.current;
     if (!l.letters) return;
-    const target = pickTarget(facesRef.current, setRef.current, l.letters, prevKey.current);
+    const picked = pickTarget(facesRef.current, setRef.current, l.letters, prevKey.current);
+    const target = { ...picked, letter: translate(picked.letter, picked.kind === 'edge' ? 'edges' : 'corners') };
     prevKey.current = stickerKey(target.face, target.i);
     shownAt.current = performance.now();
     setRound({ target, typed: null });
@@ -65,6 +70,7 @@ export function useDrill(letters: FaceStrings | null, showFace: (face: Face) => 
     if (r.typed !== null) { next(); return; }    // a key during the pause after a miss moves on
     const ok = typed === r.target.letter;
     const ms = performance.now() - shownAt.current;
+    recordAttempt(`letter-recognition:${r.target.kind}`, translate(r.target.letter, r.target.kind === 'edge' ? 'edges' : 'corners', true), ok, ms);
     setRound({ ...r, typed });
     setStats(s => {
       const streak = ok ? s.streak + 1 : 0;

@@ -1,3 +1,5 @@
+import { translate, useLocal } from '../lib/local';
+import { Button } from '../components/ui/Button';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CubeHandle } from '../components/cube/Cube3D';
 import { SolveControls } from '../components/header/SolveControls';
@@ -13,7 +15,7 @@ import { usePlayback } from '../hooks/usePlayback';
 import { usePractice } from '../hooks/usePractice';
 import { oneOf, useStoredState } from '../hooks/useStoredState';
 import { useViewRotation } from '../hooks/useViewRotation';
-import { parseSolution } from '../lib/solution';
+import { parseSolution, displaySolution } from '../lib/solution';
 import type { LetterMode } from '../lib/types';
 
 const LETTER_CODEC = oneOf<LetterMode>('off', 'absolute', 'relative');
@@ -32,6 +34,8 @@ const LAYOUT =
 
 /** Solve: a scramble, its memo and solution, playback on the 3D cube, and a recall check. */
 export default function SolvePage() {
+  const { data: local } = useLocal();
+  const [hideMemo, setHideMemo] = useState(false), [hideAlgs, setHideAlgs] = useState(false), [hint, setHint] = useState(0), [copied, setCopied] = useState('');
   const [letterMode, setLetterMode] = useStoredState<LetterMode>('bld.letters', 'off', LETTER_CODEC);
   const [speed, setSpeed] = useStoredState<Speed>('bld.speed', '5', SPEED_CODEC);
   const [tab, setTab] = useState<PhoneTab>('solution');
@@ -46,7 +50,7 @@ export default function SolvePage() {
   const onLoaded = useCallback(() => { clearPractice(); resetRef.current(); }, [clearPractice]);
   const { current, scramble, setScramble, error, parity, changeParity, random, apply } = useCube(onLoaded);
 
-  const sections = useMemo(() => (current ? parseSolution(current.solution) : []), [current]);
+  const sections = useMemo(() => (current ? parseSolution(current.solution) : []), [current, local.activeScheme]);
   const refRows = useMemo(() => sections.flatMap(s => s.rows), [sections]);
   const edgeRows = useMemo(() => sections.find(s => s.kind === 'edges')?.rows ?? [], [sections]);
   const hasParity = sections.some(s => s.kind === 'parity');
@@ -72,21 +76,34 @@ export default function SolvePage() {
     else if (e.key === 'r' || e.key === 'R') random();
   });
 
+  useEffect(() => { setHint(0); }, [current?.scramble, playback.pos]);
+  const active = [...(current?.steps ?? [])].reverse().find(s => s.start <= playback.pos) ?? current?.steps?.at(-1);
+  const marks = active?.target_sticker ? { key: active.target_sticker, mark: 'target' as const, reveal: null, others: { ...(active.buffer_sticker ? { [active.buffer_sticker]: 'ok' as const } : {}), ...Object.fromEntries((practice?.wrong_stickers ?? []).map(k => [k, 'bad' as const])) } } : null;
   const controls = (
-    <SolveControls scramble={scramble} onScramble={setScramble} error={error} onApply={apply} onRandom={random}
+    <><SolveControls scramble={scramble} onScramble={setScramble} error={error} onApply={apply} onRandom={random}
                    moveCount={current ? current.scramble.split(' ').length : null} parity={parity} onParity={changeParity} />
+      <div className="flex flex-wrap items-center gap-2">
+        <Button onClick={() => setHideMemo(v => !v)}>{hideMemo ? 'Reveal memo' : 'Hide memo'}</Button>
+        <Button onClick={() => setHideAlgs(v => !v)}>{hideAlgs ? 'Reveal algorithms' : 'Hide algorithms'}</Button>
+        <Button onClick={() => setHint(n => (n+1)%4)}>Hint {hint}/3</Button>
+        <Button onClick={() => { pause(); resetPlayback(); clearPractice(); setHint(0); }}>Retry</Button>
+        <Button onClick={async () => { try { await navigator.clipboard.writeText(location.href); setCopied('Link copied'); } catch { setCopied(location.href); } }}>Share</Button>
+        <details><summary className="cursor-pointer text-ink-3">Keys / help</summary><p>Space play/pause · ←/→ move · Shift+←/→ target · R random. Amber marks the target, green marks the buffer; red marks remaining mistakes. Recall letters are executed exactly as typed.</p></details>
+        <span role="status">{copied}</span>
+        {hint > 0 && active && <span className="font-mono text-accent">{active.phase}: {active.memo_target ? translate(active.memo_target, active.phase === 'corners' ? 'corners' : 'edges') : 'parity'}{hint > 1 && active.execution_target ? ` → ${translate(active.execution_target, active.phase === 'corners' ? 'corners' : 'edges')}` : ''}{hint > 1 ? ` · setup ${active.setup || '(dedicated algorithm)'}` : ''}{hint > 2 ? ` ${active.algorithm}` : ''}</span>}
+      </div></>
   );
 
   return (
     <Workbench layout={LAYOUT} controls={controls}>
       <PhoneTabs active={tab} onChange={setTab} />
-      <Rail tab={tab} current={current} edgeRows={edgeRows} hasParity={hasParity} view={playback.view} pos={playback.pos}
+      <Rail hideMemo={hideMemo} tab={tab} current={current} edgeRows={edgeRows} hasParity={hasParity} view={playback.view} pos={playback.pos}
             letterMode={letterMode} outcome={outcome} parityAlg={parity} onCheck={runCheck} onRenderMine={renderMine} />
       <StageColumn drill={false} cubeRef={cubeHandle} rotation={rotation} view={playback.view}
                    letterMode={letterMode} onLetterMode={setLetterMode} absoluteLetters={current?.absolute_letters ?? null}
-                   marks={null} playback={playback} loaded={!!current} canPlayMine={!!practice} speed={speed} onSpeed={setSpeed} />
-      <SolutionSheet tab={tab} sections={sections} parityAlg={parity} moveCount={current ? current.frames.length : null}
-                     verified={current ? current.verified : null} solutionText={current?.solution ?? ''}
+                   marks={marks} playback={playback} loaded={!!current} canPlayMine={!!practice} speed={speed} onSpeed={setSpeed} />
+      <SolutionSheet tab={tab} sections={hideAlgs ? [] : sections} parityAlg={parity} moveCount={current ? current.frames.length : null}
+                     verified={current ? current.verified : null} solutionText={hideAlgs ? '' : displaySolution(current?.solution ?? '')}
                      pos={playback.pos} source={playback.source} playing={playback.playing} onJump={jumpToRow} />
     </Workbench>
   );

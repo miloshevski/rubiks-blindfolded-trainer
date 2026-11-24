@@ -8,7 +8,9 @@ from .constants import (CORNER_BUFFER_LETTERS, CORNER_NAMES, CORNER_SETUP, DEFAU
 from .cube import apply_alg, invert_alg, random_scramble, solved_state
 from .practice import check, normalize, user_steps
 from .render import ABSOLUTE_LETTERS, facelets, sticker_letters
-from .solver import format_solution, pair_up, solve, verify
+from .solver import format_solution, pair_up, solve, verify, trace_cycles
+from .cube import EDGE, CORNER, slot_name
+from .method import EDGE_ALG, CORNER_ALG
 
 
 def _check_parity(parity):
@@ -39,6 +41,7 @@ def build_payload(scramble=None, seed=None, parity=DEFAULT_PARITY):
         "solution": format_solution(solution),
         "verified": verify(scramble, solution),
         "frames": frames_for(state, solution.labelled_steps()),
+        "steps": structured_steps(state, solution),
     }
 
 
@@ -51,6 +54,12 @@ def check_payload(scramble, edges, corners, parity_number=None):
     state = apply_alg(solved_state(), _clean(scramble))
     steps = user_steps(edges, corners, parity_number)
     result = check(state, steps)
+    from .cube import home_letter
+    final = state
+    for _, alg in steps:
+        final = apply_alg(final, alg)
+    result["wrong_stickers"] = [sticker_id(kind, letter) for kind in (EDGE, CORNER)
+                                for letter in LETTERS if home_letter(final, kind, letter) != letter]
     result["edges"] = normalize(edges)
     result["corners"] = normalize(corners)
     result["frames"] = frames_for(state, steps)
@@ -60,10 +69,10 @@ def check_payload(scramble, edges, corners, parity_number=None):
 def frames_for(state, labelled):
     """Cube after every single move of [(label, algorithm), ...]."""
     frames = []
-    for label, alg in labelled:
+    for step_index, (label, alg) in enumerate(labelled):
         for move in alg.split():
             state = apply_alg(state, move)
-            frames.append({"label": label, "move": move, "facelets": facelets(state),
+            frames.append({"step": step_index, "label": label, "move": move, "facelets": facelets(state),
                            "letters": sticker_letters(state)})
     return frames
 
@@ -114,3 +123,56 @@ def _api_check(first):
 
 # Endpoint -> handler(first), where first(key, default="") reads one query parameter.
 API = {"/api/cube": _api_cube, "/api/check": _api_check, "/api/algs": lambda first: algs_payload()}
+
+
+def sticker_id(kind, letter):
+    name = slot_name(kind, letter)
+    face = name[0]
+    index = next(
+        i for i, value in enumerate(ABSOLUTE_LETTERS[face])
+        if value == letter and (i % 2 == 1 if kind == EDGE else i != 4 and i % 2 == 0))
+    return f"{face}{index}"
+
+
+def structured_steps(state, solution):
+    result, position = [], 0
+    working = state
+    for kind, steps in ((EDGE, solution.edges), (CORNER, solution.corners)):
+        events = []
+        trace_cycles(working, kind, events)
+        for step, event in zip(steps, events):
+            buffer = "U" if kind == EDGE else "E"
+            result.append({**event, "phase": kind + "s", "execution_target": step.exec_letter,
+                           "algorithm": step.algorithm, "setup": (EDGE_SETUP.get(step.exec_letter, "") if kind == EDGE else CORNER_SETUP.get(step.exec_letter, "")), "start": position,
+                           "buffer_sticker": sticker_id(kind, buffer),
+                           "target_sticker": sticker_id(kind, step.memo_letter)})
+            working = apply_alg(working, step.algorithm)
+            position += len(step.algorithm.split())
+        if kind == EDGE and solution.parity_algorithm:
+            result.append({"phase": "parity", "memo_target": None, "execution_target": None,
+                           "cycle_break": False, "algorithm": solution.parity_algorithm,
+                           "start": position, "setup": "", "buffer_sticker": None, "target_sticker": None})
+            working = apply_alg(working, solution.parity_algorithm)
+            position += len(solution.parity_algorithm.split())
+    return result
+
+
+def state_payload(scramble):
+    if not scramble or not scramble.strip():
+        raise ValueError("no scramble")
+    state = apply_alg(solved_state(), _clean(scramble))
+    return {"scramble": _clean(scramble), "facelets": facelets(state), "letters": None}
+
+
+def algorithm_check(first):
+    kind, letter = first("kind"), first("letter")
+    table = {"edges": EDGE_ALG, "corners": CORNER_ALG}
+    if kind not in table or letter not in table[kind]:
+        raise ValueError("Choose a non-buffer edge or corner target")
+    expected = apply_alg(solved_state(), table[kind][letter])
+    actual = apply_alg(solved_state(), first("algorithm"))
+    return {"correct": actual == expected}
+
+
+API.update({"/api/state": lambda first: state_payload(first("scramble")),
+            "/api/algorithm-check": algorithm_check})

@@ -12,6 +12,7 @@ export interface CubeView {
 
 /** The cube after one move of a solution. `label` is e.g. "Edges S", "Parity", "Corners D". */
 export interface Frame extends CubeView {
+  step?: number;
   label: string;
   move: string;
 }
@@ -23,6 +24,7 @@ export interface CubeData extends CubeView {
   corner_memo: string;
   solution: string;
   verified: boolean;
+  steps: SolutionStep[];
   frames: Frame[];
 }
 
@@ -32,6 +34,7 @@ export interface CheckResult {
   corners_correct: boolean;
   centers_correct?: boolean;
   wrong_edges?: string[];
+  wrong_stickers?: string[];
   wrong_corners?: string[];
   note?: string;
   edges: string;
@@ -60,4 +63,9 @@ export interface AlgData {
 
 export type ParityAlg = '1' | '2';
 export type LetterMode = 'off' | 'absolute' | 'relative';
-export type AppMode = 'solve' | 'drill' | 'algs' | 'pairs';
+export type AppMode = 'home' | 'learn' | 'practice' | 'timer' | 'stats' | 'settings' | 'solve' | 'drill' | 'algs' | 'pairs';
+
+export interface SolutionStep {
+  phase: 'edges' | 'parity' | 'corners'; memo_target: string | null; execution_target: string | null;
+  cycle_break: boolean; algorithm: string; setup: string; start: number; buffer_sticker: string | null; target_sticker: string | null;
+}

@@ -5,15 +5,16 @@ import { BrandMark } from '../ui/icons';
 import { Segmented, type SegOption } from '../ui/Segmented';
 
 const MODES: readonly SegOption<AppMode>[] = [
+  { value: 'home', label: 'Home' }, { value: 'learn', label: 'Learn' }, { value: 'practice', label: 'Practice' },
   { value: 'solve', label: 'Solve' },
-  { value: 'drill', label: 'Letter drill' },
   { value: 'algs', label: 'Algorithms' },
   { value: 'pairs', label: 'Pairs' },
+  { value: 'timer', label: 'Timer' }, { value: 'stats', label: 'Statistics' }, { value: 'settings', label: 'Settings' },
 ];
 
 export const PARITY: readonly SegOption<ParityAlg>[] = [
-  { value: '1', title: "D' L2 D M2 D' L2 D", label: <><span className="font-mono">1</span> · D' L2 D…</> },
-  { value: '2', title: "M2 U' M U2 M U' M' U2 M' U2", label: <><span className="font-mono">2</span> · M2 U' M U2…</> },
+  { value: '1', title: "M2 U' M U2 M U' M' U2 M' U2", label: <><span className="font-mono">1</span> · M2 U' M U2…</> },
+  { value: '2', title: "D' L2 D M2 D' L2 D", label: <><span className="font-mono">2</span> · D' L2 D…</> },
 ];
 
 const brand = (
@@ -35,7 +36,7 @@ export function Header({ children }: Props) {
   return (
     <header className="flex flex-none flex-wrap items-center gap-x-5 gap-y-2.5 border-b border-rule px-5 py-2.5 max-md:px-4 max-md:py-3">
       {brand}
-      <Segmented options={MODES} value={mode} onChange={navigate} label="Mode" />
+      <Segmented options={MODES} value={mode === 'drill' ? 'practice' : mode} onChange={m => navigate(m)} label="Mode" className="max-w-full flex-wrap" />
       {children}
     </header>
   );

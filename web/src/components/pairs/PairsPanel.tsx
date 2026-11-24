@@ -1,11 +1,12 @@
 import { memo, useMemo, useState, type PointerEvent, type Ref } from 'react';
-import pairs from '../../data/letter-pairs.json';
+import { entries, dictionary, words, useLocal } from '../../lib/local';
+import { DictionaryTools } from './DictionaryTools';
 import { cn } from '../../lib/cn';
 import { FACE_COLOR, SPEFFZ_LETTERS as LETTERS } from '../../lib/cube';
 import type { Face } from '../../lib/types';
 import { Bar, INPUT, Meta } from '../ui/text';
 
-const WORDS = pairs as Record<string, string>;
+
 // Speffz puts four letters on each face: A–D on U, E–H on L, I–L on F, M–P on R, Q–T on B, U–X on D.
 const FACE_OF: readonly Face[] = ['U', 'L', 'F', 'R', 'B', 'D'];
 const faceColor = (i: number) => FACE_COLOR[FACE_OF[Math.floor(i / 4)]];
@@ -44,10 +45,12 @@ interface CellProps {
   hit: boolean;
   /** The filter is exactly this pair's letters (e.g. "fe"): filled solid, apart from the other matches. */
   exact: boolean;
+  onEdit: (pair: string) => void;
+  favorite: boolean;
 }
 
 // Memoized on primitives: moving the pointer only re-renders the cells whose state changed.
-const Cell = memo(function Cell({ r, c, word, dim, cross, focus, hit, exact }: CellProps) {
+const Cell = memo(function Cell({ r, c, word, dim, cross, focus, hit, exact, onEdit, favorite }: CellProps) {
   const code = LETTERS[r] + LETTERS[c];
   return (
     <td data-r={r} data-c={c} title={`${code} · ${word}`}
@@ -58,8 +61,8 @@ const Cell = memo(function Cell({ r, c, word, dim, cross, focus, hit, exact }: C
           hit && 'z-[1] ring-inset ring-accent', exact ? 'ring-2' : hit && 'ring-1',
           dim && 'opacity-20',
         )}>
-      <div className={cn('font-mono leading-none', hit ? 'text-[10px] font-semibold' : 'text-[9px]', exact ? 'text-bg' : focus || hit ? 'text-accent' : 'text-ink-3')}>{code}</div>
-      <div className={cn('mt-0.5 line-clamp-2 break-words', exact ? 'text-bg' : 'text-ink', hit ? 'text-[13px] leading-[1.15] font-medium' : 'text-[11px] leading-[1.2]')}>{word}</div>
+      <div className={cn('font-mono leading-none', hit ? 'text-[10px] font-semibold' : 'text-[9px]', exact ? 'text-bg' : focus || hit ? 'text-accent' : 'text-ink-3')}>{code}{favorite ? ' ★' : ''}</div>
+      <button type="button" aria-label={`Edit ${code}: ${word}`} onClick={() => onEdit(code)} className={cn('cursor-pointer border-0 bg-transparent p-0 text-left mt-0.5 line-clamp-2 break-words', exact ? 'text-bg' : 'text-ink', hit ? 'text-[13px] leading-[1.15] font-medium' : 'text-[11px] leading-[1.2]')}>{word}</button>
       {/* The hovered cell pops out like a small card above the table, so the grid never reflows.
           Cells on the first/last rows and columns anchor to their edge so the scroll area does not clip it. */}
       {focus ? (
@@ -86,16 +89,25 @@ interface Props {
 
 /** Letter-pair dictionary: all 576 pairs AA–XX, first letter down the side, second across the top. */
 export function PairsPanel({ filterRef }: Props) {
+  const { data } = useLocal();
+  const WORDS = useMemo(() => words(data), [data]);
+  const ITEMS = useMemo(() => entries(data), [data]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false), [weakOnly, setWeakOnly] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
   const [at, setAt] = useState<[number, number] | null>(null);
   const q = filter.trim().toLowerCase();
 
+  const matchesPair = (code: string) => {
+    const r = data.reviews[`${data.activeScheme}:pair-word:${dictionary(data).id}:${code}`];
+    return matches(code, ITEMS[code].words.join(' '), q) && (!favoritesOnly || ITEMS[code].favorite) && (!weakOnly || !!r && r.correct < r.attempts);
+  };
   const found = useMemo(() => {
-    if (!q) return null;
+    if (!q && !favoritesOnly && !weakOnly) return null;
     let n = 0;
-    for (const a of LETTERS) for (const b of LETTERS) if (matches(a + b, WORDS[a + b], q)) n++;
+    for (const a of LETTERS) for (const b of LETTERS) if (matchesPair(a + b)) n++;
     return n;
-  }, [q]);
+  }, [q, ITEMS, favoritesOnly, weakOnly, data]);
 
   // One delegated listener instead of 576: the cell under the pointer is read from its data attributes.
   const track = (e: PointerEvent<HTMLTableElement>) => {
@@ -106,14 +118,17 @@ export function PairsPanel({ filterRef }: Props) {
 
   return (
     <section className="flex min-h-0 min-w-0 flex-col [grid-area:pairs]" aria-label="Letter pairs">
-      <Bar title="Letter pairs" rightClassName="min-w-0 flex-[0_1_320px] max-lg:flex-[1_0_100%]"
+      <Bar title="Letter pairs" rightClassName="min-w-0 flex-wrap flex-[0_1_520px] max-lg:flex-[1_0_100%]"
            meta={<Meta>
              <span aria-live="polite">{found == null ? '576 pairs' : `${found} match${found === 1 ? '' : 'es'}`}</span>
              <span className="max-md:hidden"> · first letter down, second across</span>
            </Meta>}>
+        <label className="whitespace-nowrap text-[12px]"><input type="checkbox" checked={favoritesOnly} onChange={e => setFavoritesOnly(e.target.checked)} /> Favorites</label>
+        <label className="whitespace-nowrap text-[12px]"><input type="checkbox" checked={weakOnly} onChange={e => setWeakOnly(e.target.checked)} /> Weak pairs</label>
         <input ref={filterRef} className={INPUT} type="search" placeholder="Filter: word or pair, e.g. mo" autoComplete="off"
                spellCheck={false} aria-label="Filter letter pairs" value={filter} onChange={e => setFilter(e.target.value)} />
       </Bar>
+      <DictionaryTools selected={selected} onClose={() => setSelected(null)} />
       <div className="flex-[1_1_auto] overflow-auto">
         {/* 44px for the row letters + 24 columns of at least 88px: scrolls sideways on narrower screens */}
         <table className="w-full min-w-[2156px] table-fixed border-separate border-spacing-0"
@@ -131,7 +146,7 @@ export function PairsPanel({ filterRef }: Props) {
               <tr key={a}>
                 <Head i={r} scope="row" hot={at?.[0] === r} />
                 {LETTERS.map((b, c) => (
-                  <Cell key={b} r={r} c={c} word={WORDS[a + b]} dim={!matches(a + b, WORDS[a + b], q)} hit={!!q && matches(a + b, WORDS[a + b], q)}
+                  <Cell favorite={ITEMS[a + b].favorite} onEdit={setSelected} key={b} r={r} c={c} word={WORDS[a + b]} dim={!matchesPair(a + b)} hit={!!q && matchesPair(a + b)}
                         exact={!!q && (a + b).toLowerCase() === q}
                         cross={!!at && (at[0] === r || at[1] === c)} focus={at?.[0] === r && at?.[1] === c} />
                 ))}

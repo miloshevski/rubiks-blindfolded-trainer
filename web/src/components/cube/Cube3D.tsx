@@ -1,3 +1,4 @@
+import { getLocal } from '../../lib/local';
 import { memo, useCallback, useImperativeHandle, useLayoutEffect, useRef, type Ref } from 'react';
 import {
   CUBIE_BY_ID, CUBIE_SIDES, CUBIES, cubieTranslate, ghostSticker, ghostTransform, layerTurn, SIDE_TRANSFORM,
@@ -11,6 +12,7 @@ export interface DrillMarks {
   key: string;
   mark: StickerMark;
   reveal: string | null;
+  others?: Record<string, StickerMark>;
 }
 
 export interface CubeHandle {
@@ -56,6 +58,7 @@ export function Cube3D({ ref, elementRef, view, letterMode, absoluteLetters, mar
   useImperativeHandle(ref, () => ({
     settle,
     turn(move, ms) {
+      if (getLocal().preferences['appearance.motion'] === 'true' || matchMedia('(prefers-reduced-motion: reduce)').matches) ms = 0;
       const { axis, angle, cubies } = layerTurn(move);
       for (const c of cubies) turning.current.add(c.id);
       // Rotating each cubie about the cube center (its own center at rest) turns the whole layer.
@@ -97,7 +100,7 @@ export function Cube3D({ ref, elementRef, view, letterMode, absoluteLetters, mar
     return {
       color: stickerColor(view, face, i),
       letter: mark?.reveal ?? stickerLetter(view, letterMode, absoluteLetters, face, i),
-      mark: mark?.mark,
+      mark: mark?.mark ?? marks?.others?.[key],
     };
   };
 

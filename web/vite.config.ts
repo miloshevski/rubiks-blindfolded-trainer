@@ -1,3 +1,4 @@
+import { localPwa } from './pwa.ts';
 import { spawn } from 'node:child_process';
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -22,7 +23,8 @@ function apiServer(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), apiServer()],
+  plugins: [react(), tailwindcss(), apiServer(), localPwa()],
+  worker: { format: 'es' },
   server: {
     port: 5173,
     proxy: { '/api': 'http://127.0.0.1:8000' },

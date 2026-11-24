@@ -1,3 +1,4 @@
+import { getLocal } from './local';
 import { SPEFFZ_LETTERS } from './cube';
 import type { Face, FaceStrings } from './types';
 
@@ -22,7 +23,13 @@ export function pickTarget(faces: readonly Face[], set: StickerSet, letters: Fac
     if (set !== 'both' && set !== `${kind}s`) continue;
     if (`${face}${i}` !== prevKey) pool.push({ face, i, kind, letter: letters[face][i] });
   }
-  return pool[Math.floor(Math.random() * pool.length)];
+  const d = getLocal(), now = Date.now();
+  const weight = (target: DrillTarget) => {
+    const review = d.reviews[`${d.activeScheme}:letter-recognition:${target.kind}:${target.letter}`];
+    return !review ? 2 : review.due <= now ? 4 + 4 * (1-review.correct/review.attempts) : 1;
+  };
+  let ticket = Math.random() * pool.reduce((sum, target) => sum + weight(target), 0);
+  return pool.find(target => (ticket -= weight(target)) < 0) ?? pool[0];
 }
 
 export const DRILL_LETTERS = SPEFFZ_LETTERS;

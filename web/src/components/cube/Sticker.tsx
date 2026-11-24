@@ -1,3 +1,5 @@
+import { getLocal } from '../../lib/local';
+import { FACE_COLOR } from '../../lib/cube';
 import { memo } from 'react';
 import { cn } from '../../lib/cn';
 
@@ -22,7 +24,7 @@ export const Sticker = memo(function Sticker({ className, color, letter, mark }:
   return (
     <i className={cn('flex items-center justify-center not-italic text-black', className, mark && MARK_CLASS[mark])}
        style={{ background: color }}>
-      {letter}
+      {letter || (getLocal().preferences['appearance.cues'] === 'true' ? Object.entries(FACE_COLOR).find(([,v]) => v === color)?.[0] : '')}
     </i>
   );
 });

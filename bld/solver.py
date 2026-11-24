@@ -19,7 +19,7 @@ from .cube import (CORNER, EDGE, apply_alg, apply_algs, home_letter, is_solved,
                    piece_of, piece_solved, solved_state)
 
 
-def trace_cycles(state, kind) -> Tuple[str, ...]:
+def trace_cycles(state, kind, events=None) -> Tuple[str, ...]:
     """Memo letters for ``kind`` (EDGE or CORNER), read from ``state``.
 
     Static sticker tracing from the buffer: the target is the home letter of
@@ -35,6 +35,10 @@ def trace_cycles(state, kind) -> Tuple[str, ...]:
     home = {l: home_letter(state, kind, l) for l in LETTERS}
 
     memo = []
+    def record(target, cycle_break=False):
+        memo.append(target)
+        if events is not None:
+            events.append({"memo_target": target, "cycle_break": cycle_break})
     handled = set()                      # pieces already placed in the memo
 
     cur = trace_letter
@@ -42,7 +46,7 @@ def trace_cycles(state, kind) -> Tuple[str, ...]:
         target = home[cur]
         if target in buffer_piece:
             break
-        memo.append(target)
+        record(target)
         handled.add(piece_of(kind, target))
         cur = target
 
@@ -58,11 +62,11 @@ def trace_cycles(state, kind) -> Tuple[str, ...]:
             return tuple(memo)
         break_piece = piece_of(kind, start)
         handled.add(break_piece)
-        memo.append(start)
+        record(start, True)
         cur = start
         while True:
             target = home[cur]
-            memo.append(target)
+            record(target)
             handled.add(piece_of(kind, target))
             if target in break_piece:
                 break

@@ -26,7 +26,7 @@ interface Props {
 export function Stage({ cubeRef, rotation, view, letterMode, absoluteLetters, marks, modeReadout, children }: Props) {
   return (
     <div ref={rotation.stageRef}
-         className={`relative flex min-h-[520px] flex-[1_1_auto] cursor-grab touch-none items-center justify-center overflow-hidden
+         className={`cube-stage relative flex min-h-[520px] flex-[1_1_auto] cursor-grab touch-none items-center justify-center overflow-hidden
                     perspective-[1100px] select-none active:cursor-grabbing max-md:min-h-[330px] max-md:perspective-[700px]
                     tablet-portrait:min-h-[400px] tablet-landscape:min-h-0 ${TABLET_LANDSCAPE_FIT}`}>
       <div ref={rotation.readoutRef} className={`${READOUT} left-5`} />

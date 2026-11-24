@@ -29,26 +29,27 @@ interface Props {
   parityAlg: ParityAlg;
   onCheck: (edges: string, corners: string, parity: boolean) => void;
   onRenderMine: () => void;
+  hideMemo?: boolean;
 }
 
 /** Left column of Solve mode: memo, unfolded cube, recall check. */
-export function Rail({ tab, current, edgeRows, hasParity, view, pos, letterMode, outcome, parityAlg, onCheck, onRenderMine }: Props) {
+export function Rail({ tab, current, edgeRows, hasParity, view, pos, letterMode, outcome, parityAlg, onCheck, onRenderMine, hideMemo }: Props) {
   return (
     <aside className="overflow-auto border-r border-rule [grid-area:rail] max-xl:overflow-visible max-md:border-r-0
                       tablet:border-r-0 tablet-landscape:overflow-auto tablet-landscape:[grid-area:panel]">
       <RailSection tab="memo" active={tab}>
         <SectionHead title="Memo" meta={current ? memoTargets(current.edge_memo, current.corner_memo) : ''} />
-        {current ? (
+        {current && !hideMemo ? (
           <MemoPanel edgeMemo={current.edge_memo} cornerMemo={current.corner_memo} edgeRows={edgeRows} hasParity={hasParity} />
         ) : null}
       </RailSection>
       <RailSection tab="net" active={tab}>
         <SectionHead title="Net" meta={pos ? `in step · move ${pos}` : 'scrambled'} />
-        <Net view={view} letterMode={letterMode} absoluteLetters={current?.absolute_letters ?? null} />
+        <Net marks={Object.fromEntries((outcome?.ok ? outcome.result.wrong_stickers ?? [] : []).map(k => [k, 'bad' as const]))} view={view} letterMode={letterMode} absoluteLetters={current?.absolute_letters ?? null} />
       </RailSection>
       <RailSection tab="check" active={tab}>
         <SectionHead title="Recall check" meta="letters as executed" tight />
-        <RecallCheck outcome={outcome} parityAlg={parityAlg} edgeMemo={current?.edge_memo ?? ''} cornerMemo={current?.corner_memo ?? ''} onCheck={onCheck} onRender={onRenderMine} />
+        <RecallCheck key={current?.scramble} hideMemo={hideMemo} outcome={outcome} parityAlg={parityAlg} edgeMemo={current?.edge_memo ?? ''} cornerMemo={current?.corner_memo ?? ''} onCheck={onCheck} onRender={onRenderMine} />
       </RailSection>
     </aside>
   );
