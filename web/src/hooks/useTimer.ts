@@ -75,13 +75,6 @@ export function useTimer() {
     next();
   }, [phase, solves, setSolves, next]);
 
-  /** The big button and the space bar: start, stop, or move on to the next solve. */
-  const press = useCallback(() => {
-    if (phase === 'running') stop();
-    else if (phase === 'idle' || phase === 'armed') start();
-    else next();
-  }, [phase, start, stop, next]);
-
   /** A key goes down: stops a running clock; otherwise arms the next start (from a finished solve, with a new scramble). */
   const keyDown = useCallback(() => {
     if (phase === 'running') stop();
@@ -94,5 +87,5 @@ export function useTimer() {
     if (phase === 'armed') { if (cube) start(); else setPhase('idle'); }
   }, [phase, cube, start]);
 
-  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, press, keyDown, keyUp, setPenalty, discard, nextScramble };
+  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, keyDown, keyUp, setPenalty, discard, nextScramble };
 }

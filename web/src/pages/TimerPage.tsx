@@ -43,7 +43,7 @@ export default function TimerPage() {
   return (
     <Workbench layout={LAYOUT}>
       <TimerPanel phase={t.phase} display={t.display} last={t.last} solveNo={t.solves.length + (t.phase === 'done' ? 0 : 1)}
-                  ready={!!t.cube} onPress={t.press} onPenalty={t.setPenalty} onDiscard={t.discard} />
+                  onPenalty={t.setPenalty} onDiscard={t.discard} />
       <ScramblePanel key={t.cube?.scramble} cube={t.cube} error={t.error} canRescramble={t.phase === 'idle'} onRescramble={t.nextScramble} />
       <StatsPanel solves={t.solves} />
     </Workbench>

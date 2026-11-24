@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 import { cn } from '../../lib/cn';
 import { formatSolve, type Penalty, type Solve } from '../../lib/timer';
 import type { TimerPhase } from '../../hooks/useTimer';
-import { Button, Kbd } from '../ui/Button';
+import { Button } from '../ui/Button';
 import { IconTrash } from '../ui/icons';
 import { Bar, Meta } from '../ui/text';
 
@@ -12,16 +12,19 @@ interface Props {
   /** The solve just finished (null otherwise). */
   last: Solve | undefined;
   solveNo: number;
-  ready: boolean;
-  onPress: () => void;
   onPenalty: (p: Penalty) => void;
   onDiscard: () => void;
 }
 
-const STATUS: Record<TimerPhase, string> = { idle: 'Ready', armed: 'Release to start', running: 'Solving…', done: 'Solve saved' };
+const STATUS: Record<TimerPhase, string> = {
+  idle: 'Hold Space, release to start',
+  armed: 'Release to start',
+  running: 'Press any key to stop',
+  done: 'Solve saved · hold Space for the next',
+};
 
 /** Middle pane of the Timer: the clock, start/stop, and the penalty buttons after a solve. */
-export function TimerPanel({ phase, display, last, solveNo, ready, onPress, onPenalty, onDiscard }: Props) {
+export function TimerPanel({ phase, display, last, solveNo, onPenalty, onDiscard }: Props) {
   const text = phase === 'done' && last ? formatSolve(last) : '0.00';
   const tone = last?.penalty === 'dnf' ? 'text-bad' : last?.penalty === 'plus2' ? 'text-accent' : phase === 'armed' ? 'text-ok' : phase === 'idle' ? 'text-ink-2' : 'text-ink';
   // Buttons drop focus after a click so the space bar always means start / stop, never "press that button again".
@@ -47,10 +50,6 @@ export function TimerPanel({ phase, display, last, solveNo, ready, onPress, onPe
                     onClick={blurAfter(() => onPenalty('plus2'))}>+2 s</Button>
           </div>
         )}
-        <Button size="lg" variant={phase === 'running' ? 'active' : 'primary'} disabled={!ready && (phase === 'idle' || phase === 'armed')}
-                onClick={blurAfter(onPress)} className="w-[200px]">
-          {phase === 'running' ? 'Stop' : phase === 'armed' ? 'Release' : phase === 'done' ? 'Next solve' : 'Start'} <Kbd>Space</Kbd>
-        </Button>
       </div>
     </section>
   );
