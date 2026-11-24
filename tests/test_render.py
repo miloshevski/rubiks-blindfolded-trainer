@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from bld.cube import apply_alg, solved_state
 from bld.render import FACES, facelets
-from bld.server import build_payload
+from bld.api import build_payload
 
 
 def cube(alg):
@@ -124,7 +124,7 @@ class Payload(unittest.TestCase):
 class AlgorithmList(unittest.TestCase):
     def test_matches_the_solver_tables(self):
         from bld.method import CORNER_ALG, EDGE_ALG
-        from bld.server import algs_payload
+        from bld.api import algs_payload
         p = algs_payload()
         self.assertEqual([r["letter"] for r in p["edges"]], list("ABCDEFGHIJKLMNOPQRSTUVWX"))
         self.assertEqual([r["letter"] for r in p["corners"]], list("ABCDEFGHIJKLMNOPQRSTUVWX"))

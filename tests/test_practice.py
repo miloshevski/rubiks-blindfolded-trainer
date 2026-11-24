@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from bld.practice import normalize, user_steps
 from bld.render import FACES
-from bld.server import check_payload
+from bld.api import check_payload
 
 SCRAMBLE_2 = "D' F2 L2 U' R2 U B2 D U F' R F2 L B F U2 L U2 F R'"
 # What the generator prints for scramble 2: executed edge letters, parity alg 1, corners.

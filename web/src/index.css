@@ -1,0 +1,81 @@
+@import 'tailwindcss';
+
+/* Design tokens: the exact palette and type of the original single-file page. */
+@theme {
+  --breakpoint-*: initial;
+  --breakpoint-md: 760px;    /* below: phone (cube on top, the rest behind tabs) */
+  --breakpoint-lg: 900px;    /* below: algorithm list in one column */
+  --breakpoint-xl: 1280px;   /* from here: three-column workbench that fits the window */
+
+  --color-*: initial;
+  --color-white: #fff;
+  --color-black: #000;
+  --color-bg: #0c0d0e;
+  --color-raise: #141517;
+  --color-raise-2: #1c1d20;
+  --color-sunk: #0f1012;
+  --color-rule: #232528;
+  --color-rule-soft: #1b1c1f;
+  --color-edge: #2e3034;
+  --color-edge-2: #43464c;
+  --color-ink: #ece9e2;
+  --color-ink-2: #a4a29c;
+  --color-ink-3: #85827c;
+  --color-played: #6e6c67;
+  --color-played-hover: #8a877f;
+  --color-accent: #f2b33d;
+  --color-accent-bg: rgb(242 179 61 / .12);
+  --color-accent-bg-dim: rgb(242 179 61 / .05);
+  --color-ok: #7bcb8e;
+  --color-bad: #f2846f;
+  --color-bad-edge: #7a3a30;
+  --color-cube-body: #060606;
+  /* control greys */
+  --color-line: #2a2c30;       /* field / segmented outline, idle tape */
+  --color-line-2: #3a3d42;     /* field hover, badge outline */
+  --color-line-3: #34373c;     /* pill outline, phase rule */
+  --color-line-dim: #26282b;   /* faded outlines */
+  --color-row-hover: #121315;  /* row hover */
+  --color-row-current: #16171a; /* current row */
+  --color-press: #222427;
+  --color-pressed: #24262a;    /* pressed segment */
+  --color-disabled: #4a4c50;
+  --color-tape-parity: #3a3428;
+  /* sticker colors */
+  --color-face-u: #edebe6;
+  --color-face-d: #f5cb3a;
+  --color-face-f: #1f9d55;
+  --color-face-b: #2f64de;
+  --color-face-r: #d23b30;
+  --color-face-l: #ef8726;
+
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --animate-blink: blink .8s ease-in-out infinite;
+  @keyframes blink { 50% { filter: brightness(.3); } }
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --c: 72px;   /* cubie size of the 3D cube */
+  }
+  @media (width < 760px) {
+    :root { --c: 42px; }
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font: 13px/1.45 var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  #root { height: 100%; display: flex; flex-direction: column; }
+  /* Wide desktop: an app that fits the window, each pane scrolls on its own. */
+  @media (width >= 1280px) {
+    #root { height: 100vh; overflow: hidden; }
+  }
+  :focus-visible { outline: 2px solid var(--color-ink); outline-offset: 2px; }
+}
