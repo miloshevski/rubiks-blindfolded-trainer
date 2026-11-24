@@ -17,6 +17,12 @@ class StaticFiles(unittest.TestCase):
         for path in ("/../bld/server.py", "/..%2Fbld%2Fserver.py", "/%2e%2e/RUBIKS_SKILL.md", "/../../etc/passwd"):
             self.assertIsNone(server.static_file(path), path)
 
+    def test_app_routes_serve_index(self):
+        index = server.static_file("/")
+        for path in server.APP_ROUTES:
+            self.assertEqual(server.static_file(path), index, path)
+            self.assertEqual(server.static_file(path + "/"), index, path)
+
     def test_missing_file(self):
         self.assertIsNone(server.static_file("/no-such-file.js"))
 

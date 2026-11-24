@@ -19,9 +19,15 @@ NOT_BUILT = (b"<!doctype html><meta charset=utf-8><title>Blindfold Trainer</titl
              b"<p>The web app is not built yet: run <code>npm install && npm run build</code> in web/.")
 
 
+# Client-side routes of the web app: each one is answered with index.html.
+APP_ROUTES = ("/solve", "/letter-drill", "/algorithms", "/pairs")
+
+
 def static_file(url_path):
     """Path of the built file for a URL path, or None.  Never leaves DIST_DIR."""
     rel = unquote(url_path).lstrip("/") or "index.html"
+    if "/" + rel.rstrip("/") in APP_ROUTES:
+        rel = "index.html"
     path = os.path.realpath(os.path.join(DIST_DIR, rel))
     if os.path.commonpath([path, os.path.realpath(DIST_DIR)]) != os.path.realpath(DIST_DIR):
         return None

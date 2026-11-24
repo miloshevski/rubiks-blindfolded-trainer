@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
+import { navigate, useMode } from '../../lib/route';
 import type { AppMode, ParityAlg } from '../../lib/types';
 import { BrandMark } from '../ui/icons';
 import { Segmented, type SegOption } from '../ui/Segmented';
-import { ScrambleForm } from './ScrambleForm';
 
 const MODES: readonly SegOption<AppMode>[] = [
   { value: 'solve', label: 'Solve' },
@@ -10,7 +11,7 @@ const MODES: readonly SegOption<AppMode>[] = [
   { value: 'pairs', label: 'Pairs' },
 ];
 
-const PARITY: readonly SegOption<ParityAlg>[] = [
+export const PARITY: readonly SegOption<ParityAlg>[] = [
   { value: '1', title: "D' L2 D M2 D' L2 D", label: <><span className="font-mono">1</span> · D' L2 D…</> },
   { value: '2', title: "M2 U' M U2 M U' M' U2 M' U2", label: <><span className="font-mono">2</span> · M2 U' M U2…</> },
 ];
@@ -24,35 +25,18 @@ const brand = (
 );
 
 interface Props {
-  mode: AppMode;
-  onMode: (mode: AppMode) => void;
-  scramble: string;
-  onScramble: (value: string) => void;
-  moveCount: number | null;
-  error: string;
-  onApply: () => void;
-  onRandom: () => void;
-  parity: ParityAlg;
-  onParity: (p: ParityAlg) => void;
+  /** Page-specific controls, shown after the mode switch (Solve: scramble and parity). */
+  children?: ReactNode;
 }
 
-/** Command bar. The scramble and parity controls only belong to Solve mode. */
-export function Header({ mode, onMode, scramble, onScramble, moveCount, error, onApply, onRandom, parity, onParity }: Props) {
+/** Command bar: the brand, the page switch, and whatever controls the current page adds. */
+export function Header({ children }: Props) {
+  const mode = useMode();
   return (
     <header className="flex flex-none flex-wrap items-center gap-x-5 gap-y-2.5 border-b border-rule px-5 py-2.5 max-md:px-4 max-md:py-3">
       {brand}
-      <Segmented options={MODES} value={mode} onChange={onMode} label="Mode" />
-      {mode === 'solve' ? (
-        <>
-          <ScrambleForm value={scramble} onChange={onScramble} moveCount={moveCount} invalid={!!error}
-                        onApply={onApply} onRandom={onRandom} />
-          <div className="flex items-center gap-2">
-            <span id="parity-l" className="text-[12px] text-ink-3">Parity</span>
-            <Segmented options={PARITY} value={parity} onChange={onParity} labelledBy="parity-l" />
-          </div>
-          {error ? <p id="msg" role="alert" className="m-0 shrink-0 grow basis-full font-mono text-[11.5px] leading-[normal] text-bad touch:order-last">{error}</p> : null}
-        </>
-      ) : null}
+      <Segmented options={MODES} value={mode} onChange={navigate} label="Mode" />
+      {children}
     </header>
   );
 }
