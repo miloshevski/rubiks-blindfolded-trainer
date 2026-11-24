@@ -1,4 +1,4 @@
-import { Activity, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Activity, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlgorithmsPanel } from './components/algs/AlgorithmsPanel';
 import type { CubeHandle } from './components/cube/Cube3D';
 import { DrillPanel } from './components/drill/DrillPanel';
@@ -21,7 +21,10 @@ import { SOLVED_FACELETS } from './lib/cube';
 import { parseSolution } from './lib/solution';
 import type { AppMode, CubeData, CubeView, LetterMode, ParityAlg } from './lib/types';
 
-const MODE_CODEC = oneOf<AppMode>('solve', 'drill', 'algs');
+const MODE_CODEC = oneOf<AppMode>('solve', 'drill', 'algs', 'pairs');
+
+// The letter-pair dictionary (576 words) is only needed in its own mode: load it on first use.
+const PairsPanel = lazy(() => import('./components/pairs/PairsPanel').then(m => ({ default: m.PairsPanel })));
 const LETTER_CODEC = oneOf<LetterMode>('off', 'absolute', 'relative');
 const SPEED_CODEC = oneOf<Speed>('2', '5', '10');
 const DRILL_KEY = /^[a-x]$/i;
@@ -42,6 +45,7 @@ const LAYOUT: Record<AppMode, string> = {
     + 'md:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] md:[grid-template-areas:"stage_drill"] '
     + 'tablet-portrait:grid-cols-[minmax(0,1fr)] tablet-portrait:[grid-template-areas:"stage"_"drill"]',
   algs: 'grid-cols-[minmax(0,1fr)] [grid-template-areas:"algs"]',
+  pairs: 'grid-cols-[minmax(0,1fr)] [grid-template-areas:"pairs"]',
 };
 
 export function App() {
@@ -124,7 +128,7 @@ export function App() {
       }
       return;
     }
-    if (mode === 'algs') {
+    if (mode === 'algs' || mode === 'pairs') {
       if (e.key === '/') { e.preventDefault(); filterRef.current?.focus(); }
       return;
     }
@@ -153,7 +157,7 @@ export function App() {
           <Rail tab={tab} current={current} edgeRows={edgeRows} hasParity={hasParity} view={playback.view} pos={playback.pos}
                 letterMode={letterMode} outcome={outcome} parityAlg={parity} onCheck={runCheck} onRenderMine={renderMine} />
         </Activity>
-        {mode === 'algs' ? null : (
+        {mode === 'algs' || mode === 'pairs' ? null : (
           <StageColumn drill={mode === 'drill'} cubeRef={cube} rotation={rotation}
                        view={mode === 'drill' ? drillView : playback.view} letterMode={letterMode} onLetterMode={setLetterMode}
                        absoluteLetters={letters} marks={mode === 'drill' ? drill.marks : null} playback={playback}
@@ -168,6 +172,11 @@ export function App() {
         <Activity mode={mode === 'algs' ? 'visible' : 'hidden'}>
           <AlgorithmsPanel data={algs.data} error={algs.error} filterRef={filterRef} />
         </Activity>
+        {mode === 'pairs' ? (
+          <Suspense fallback={<p className="m-0 px-5 py-4 text-[12.5px] text-ink-3 [grid-area:pairs]">Loading…</p>}>
+            <PairsPanel filterRef={filterRef} />
+          </Suspense>
+        ) : null}
       </main>
     </>
   );

@@ -101,6 +101,9 @@ export function stickerLetter(
   return ch && ch !== '.' ? ch : '';
 }
 
+/** The 24 Speffz letters, in order: four per face, U L F R B D. */
+export const SPEFFZ_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWX'.split('');
+
 export const SOLVED_FACELETS = Object.fromEntries(FACES.map(f => [f, f.repeat(9)])) as FaceStrings;
 
 /** Key of one sticker, e.g. "U3". */

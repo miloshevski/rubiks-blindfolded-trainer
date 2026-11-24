@@ -7,6 +7,7 @@ const MODES: readonly SegOption<AppMode>[] = [
   { value: 'solve', label: 'Solve' },
   { value: 'drill', label: 'Letter drill' },
   { value: 'algs', label: 'Algorithms' },
+  { value: 'pairs', label: 'Pairs' },
 ];
 
 const PARITY: readonly SegOption<ParityAlg>[] = [

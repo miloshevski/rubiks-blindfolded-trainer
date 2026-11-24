@@ -1,3 +1,4 @@
+import { SPEFFZ_LETTERS } from './cube';
 import type { Face, FaceStrings } from './types';
 
 export type StickerSet = 'edges' | 'corners' | 'both';
@@ -24,4 +25,4 @@ export function pickTarget(faces: readonly Face[], set: StickerSet, letters: Fac
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-export const DRILL_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWX'.split('');
+export const DRILL_LETTERS = SPEFFZ_LETTERS;
