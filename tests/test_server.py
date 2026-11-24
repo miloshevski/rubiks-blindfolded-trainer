@@ -38,7 +38,8 @@ class Http(unittest.TestCase):
             with urllib.request.urlopen(self.base + path, timeout=10) as r:
                 return r.status, r.headers, r.read()
         except urllib.error.HTTPError as e:
-            return e.code, e.headers, e.read()
+            with e:     # the error holds the open response: close it
+                return e.code, e.headers, e.read()
 
     def test_api(self):
         status, headers, body = self.get("/api/algs")
