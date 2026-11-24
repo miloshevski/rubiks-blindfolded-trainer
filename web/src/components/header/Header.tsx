@@ -49,7 +49,7 @@ export function Header({ mode, onMode, scramble, onScramble, moveCount, error, o
             <span id="parity-l" className="text-[12px] text-ink-3">Parity</span>
             <Segmented options={PARITY} value={parity} onChange={onParity} labelledBy="parity-l" />
           </div>
-          {error ? <p id="msg" role="alert" className="m-0 shrink-0 grow basis-full font-mono text-[11.5px] leading-[normal] text-bad">{error}</p> : null}
+          {error ? <p id="msg" role="alert" className="m-0 shrink-0 grow basis-full font-mono text-[11.5px] leading-[normal] text-bad touch:order-last">{error}</p> : null}
         </>
       ) : null}
     </header>
