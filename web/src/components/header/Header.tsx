@@ -9,6 +9,7 @@ const MODES: readonly SegOption<AppMode>[] = [
   { value: 'drill', label: 'Letter drill' },
   { value: 'algs', label: 'Algorithms' },
   { value: 'pairs', label: 'Pairs' },
+  { value: 'timer', label: 'Timer' },
 ];
 
 export const PARITY: readonly SegOption<ParityAlg>[] = [

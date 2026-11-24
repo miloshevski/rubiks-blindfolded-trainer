@@ -7,8 +7,11 @@ const VARIANT = {
   default: 'border-edge bg-raise text-ink enabled:hover:border-edge-2 enabled:hover:bg-raise-2 enabled:active:bg-press '
     + 'disabled:border-rule disabled:text-ink-3',
   primary: 'border-ink bg-ink text-bg enabled:hover:border-white enabled:hover:bg-white',
+  /** A toggled-on button, e.g. the active penalty. */
+  active: 'border-accent bg-accent-bg text-accent enabled:hover:bg-accent-bg',
 };
-const SIZE = { md: 'h-8 px-3 text-[13px] touch:h-10', sm: 'h-7 px-2.5 text-[12px] touch:h-9' };
+const SIZE = { md: 'h-8 px-3 text-[13px] touch:h-10', sm: 'h-7 px-2.5 text-[12px] touch:h-9',
+  lg: 'h-11 px-6 text-[14px] touch:h-12' };
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof VARIANT;

@@ -50,3 +50,17 @@ export const BrandMark = (
     <rect x="6.8" y="6.8" width="4.4" height="4.4" rx=".8" fill="var(--color-accent)" />
   </svg>
 );
+
+export const IconHint = (
+  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"
+       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5.5 11.5c0-1-1.7-1.9-1.7-4.2a4.2 4.2 0 0 1 8.4 0c0 2.3-1.7 3.2-1.7 4.2zM6 14h4" />
+  </svg>
+);
+
+export const IconTrash = (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"
+       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8.5h6.8l.6-8.5M6.7 7v3.5M9.3 7v3.5" />
+  </svg>
+);

@@ -90,7 +90,4 @@ Follow these on every change. Each exists because breaking it has already happen
 
 Run the Python tests, `npx tsc -b`, the build, and check the affected pages at the phone, tablet and desktop sizes with the browser tools. For anything visual, **compare against the previous build instead of eyeballing**. The method, the size list and the test-harness traps are in `references/verifying-changes.md`. Report what you checked and what you could not (for example, no real tablet).
 
-## References
 
-- `references/preserving-looks.md`: tokens, breakpoints and tablet variants, per-page grid, UI primitives, Tailwind traps.
-- `references/verifying-changes.md`: viewport list, old-vs-new comparison, touch emulation, browser-pane quirks, deploy checks.

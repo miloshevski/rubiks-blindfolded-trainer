@@ -20,7 +20,7 @@ NOT_BUILT = (b"<!doctype html><meta charset=utf-8><title>Blindfold Trainer</titl
 
 
 # Client-side routes of the web app: each one is answered with index.html.
-APP_ROUTES = ("/solve", "/letter-drill", "/algorithms", "/pairs")
+APP_ROUTES = ("/solve", "/letter-drill", "/algorithms", "/pairs", "/timer")
 
 
 def static_file(url_path):

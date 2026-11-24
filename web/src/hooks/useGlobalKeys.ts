@@ -17,3 +17,16 @@ export function useGlobalKeys(handler: (e: KeyboardEvent, target: Element | null
     return () => document.removeEventListener('keydown', onKey);
   }, [latest]);
 }
+
+/** Like useGlobalKeys, for key releases (no modifier filter: letting go of Ctrl must not strand a held timer). */
+export function useGlobalKeyUp(handler: (e: KeyboardEvent) => void) {
+  const latest = useLatest(handler);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof Element && e.target.closest('input, textarea, select')) return;
+      latest.current(e);
+    };
+    document.addEventListener('keyup', onKey);
+    return () => document.removeEventListener('keyup', onKey);
+  }, [latest]);
+}

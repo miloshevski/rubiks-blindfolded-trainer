@@ -10,6 +10,7 @@ const PAGES: Record<AppMode, ComponentType> = {
   drill: lazy(() => import('./pages/DrillPage')),
   algs: lazy(() => import('./pages/AlgorithmsPage')),
   pairs: lazy(() => import('./pages/PairsPage')),
+  timer: lazy(() => import('./pages/TimerPage')),
 };
 
 // While a page loads, keep the header so the page switch does not flash away.

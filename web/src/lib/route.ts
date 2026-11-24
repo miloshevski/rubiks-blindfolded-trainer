@@ -7,6 +7,7 @@ export const MODE_PATH: Record<AppMode, string> = {
   drill: '/letter-drill',
   algs: '/algorithms',
   pairs: '/pairs',
+  timer: '/timer',
 };
 
 const MODES = Object.keys(MODE_PATH) as AppMode[];
