@@ -48,13 +48,27 @@ const Cell = memo(function Cell({ r, c, word, dim, cross, focus }: CellProps) {
   return (
     <td data-r={r} data-c={c} title={`${code} · ${word}`}
         className={cn(
-          'h-12 border-b border-r px-1.5 pt-1 align-top transition-opacity duration-[120ms]',
+          'relative h-12 border-b border-r px-1.5 pt-1 align-top transition-opacity duration-[120ms]',
           edgeRight(c), edgeBottom(r),
           focus ? 'bg-accent-bg' : cross ? 'bg-raise' : 'bg-transparent',
           dim && 'opacity-20',
         )}>
       <div className={cn('font-mono text-[9px] leading-none', focus ? 'text-accent' : 'text-ink-3')}>{code}</div>
       <div className="mt-0.5 line-clamp-2 text-[11px] leading-[1.2] break-words text-ink">{word}</div>
+      {/* The hovered cell pops out as a small card just above it (below, for the first row, which has the
+          sticky header over it), so the pointer never covers the word and the grid never reflows. Cells in the
+          first/last columns anchor to their edge so the scroll area does not clip the card. */}
+      {focus ? (
+        <div aria-hidden
+             className={cn(
+               'pointer-events-none absolute z-[5] w-max min-w-[140px] max-w-[240px] animate-[pop_120ms_ease-out] rounded-md bg-bg px-4 py-3 shadow-[0_8px_28px_rgba(0,0,0,.45)] ring-1 ring-accent',
+               r === 0 ? 'top-full mt-1.5' : 'bottom-full mb-1.5',
+               c < 2 ? 'left-0' : c > 21 ? 'right-0' : 'left-1/2 -translate-x-1/2',
+             )}>
+          <div className="font-mono text-[13px] leading-none font-semibold text-accent">{code}</div>
+          <div className="mt-1.5 text-[24px] leading-[1.15] font-medium break-words text-ink">{word}</div>
+        </div>
+      ) : null}
     </td>
   );
 });
