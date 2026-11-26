@@ -66,7 +66,7 @@ export function TimerPanel({ phase, display, last, solves, onPress, onRelease, o
               className="cursor-pointer border-0 bg-transparent p-0 text-inherit touch-none select-none [-webkit-tap-highlight-color:transparent]">
         {/* key: the running clock rewrites this node's text directly, so each phase gets a fresh node */}
         <div key={phase} ref={display} role="timer" aria-live="off"
-             className={cn('font-mono text-[clamp(72px,12vw,152px)] leading-none font-medium tracking-[-.03em] whitespace-nowrap tabular-nums max-md:text-[clamp(56px,19vw,96px)] max-md:[@media(max-height:700px)]:text-[clamp(48px,15vw,80px)] md:[@media(max-height:760px)]:text-[clamp(64px,16vh,140px)]', tone)}>
+             className={cn('font-mono text-[clamp(72px,12vw,152px)] leading-none font-medium tracking-[-.03em] whitespace-nowrap tabular-nums max-md:text-[clamp(64px,21vw,100px)] max-md:[@media(max-height:700px)]:text-[clamp(48px,15vw,80px)] md:[@media(max-height:760px)]:text-[clamp(64px,16vh,140px)]', tone)}>
           {text}
         </div>
       </button>

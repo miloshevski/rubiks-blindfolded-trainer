@@ -6,18 +6,21 @@ interface FitProps {
   /** Natural width in px for content that wraps (text); omit for content with a fixed size. */
   width?: number;
   maxZoom: number;
+  /** The dialog is open and laid out, so the content can be measured. */
+  active: boolean;
 }
 
 /** Shows its content as large as the window allows, up to `maxZoom` times its natural size. */
-function Fit({ children, width, maxZoom }: FitProps) {
+function Fit({ children, width, maxZoom, active }: FitProps) {
   const box = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
   useLayoutEffect(() => {
     const el = box.current;
-    if (!el) return;
+    if (!el || !active) return;
     const fit = () => {
       el.style.zoom = '1';
       const { offsetWidth: w, offsetHeight: h } = el;
+      if (!w || !h) return;
       // Leave room for the dialog's padding and its Close button.
       const z = Math.min(maxZoom, (innerWidth * 0.94 - 56) / w, (innerHeight * 0.94 - 110) / h);
       el.style.zoom = String(Math.max(z, 1));
@@ -26,7 +29,7 @@ function Fit({ children, width, maxZoom }: FitProps) {
     fit();
     addEventListener('resize', fit);
     return () => removeEventListener('resize', fit);
-  }, [maxZoom, width]);
+  }, [maxZoom, width, active]);
   return <div ref={box} data-zoom={zoom} style={width ? { width } : undefined}>{children}</div>;
 }
 
@@ -47,10 +50,12 @@ interface Props {
 /** Click or tap (or Enter / Space) to see the content enlarged in a dialog; Esc, the Close button or a click outside closes it. */
 export function Zoomable({ children, enlarged, label, width, maxZoom = 3, className, tapAnywhere }: Props) {
   const [open, setOpen] = useState(false);
+  const [shown, setShown] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    if (open) dialog.current?.showModal();
+    if (open) { dialog.current?.showModal(); setShown(true); }   // eslint-disable-line react-hooks/set-state-in-effect
+    else setShown(false);
   }, [open]);
 
   const keyDown = (e: KeyboardEvent) => {
@@ -69,7 +74,7 @@ export function Zoomable({ children, enlarged, label, width, maxZoom = 3, classN
         <dialog ref={dialog} aria-label={label} onClose={() => setOpen(false)} onClick={() => dialog.current?.close()}
                 className="m-0 h-dvh max-h-none w-screen max-w-none cursor-pointer overflow-hidden border-0 bg-transparent p-4 text-ink-3 backdrop:bg-bg/90 open:flex open:flex-col open:items-center open:justify-center open:gap-4">
           <div className="rounded-lg border border-edge bg-sunk p-3.5">
-            <Fit width={width} maxZoom={maxZoom}>{enlarged ?? children}</Fit>
+            <Fit width={width} maxZoom={maxZoom} active={shown}>{enlarged ?? children}</Fit>
           </div>
           <span className="text-[12px]">Tap anywhere to close</span>
         </dialog>
@@ -79,7 +84,7 @@ export function Zoomable({ children, enlarged, label, width, maxZoom = 3, classN
                 onClick={e => { if (e.target === e.currentTarget) dialog.current?.close(); }}
                 className="m-auto max-h-[96vh] max-w-[96vw] overflow-auto rounded-md border border-line bg-bg p-5 text-ink backdrop:bg-black/75">
           <div className="flex justify-center">
-            <Fit width={width} maxZoom={maxZoom}>{enlarged ?? children}</Fit>
+            <Fit width={width} maxZoom={maxZoom} active={shown}>{enlarged ?? children}</Fit>
           </div>
           <div className="mt-4 flex justify-center">
             <button type="button" onClick={() => dialog.current?.close()}
