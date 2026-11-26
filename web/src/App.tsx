@@ -6,6 +6,8 @@ import type { AppMode } from './lib/types';
 // Each page is its own chunk, loaded the first time it is visited (the Pairs dictionary alone
 // is 576 words).
 const PAGES: Record<AppMode, ComponentType> = {
+  home: lazy(() => import('./pages/HomePage')),
+  tutorial: lazy(() => import('./pages/TutorialPage')),
   solve: lazy(() => import('./pages/SolvePage')),
   drill: lazy(() => import('./pages/DrillPage')),
   algs: lazy(() => import('./pages/AlgorithmsPage')),

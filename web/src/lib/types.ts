@@ -68,4 +68,4 @@ export interface AlgData {
 
 export type ParityAlg = '1' | '2';
 export type LetterMode = 'off' | 'absolute' | 'relative';
-export type AppMode = 'solve' | 'drill' | 'algs' | 'pairs' | 'timer';
+export type AppMode = 'solve' | 'drill' | 'algs' | 'pairs' | 'timer' | 'home' | 'tutorial';

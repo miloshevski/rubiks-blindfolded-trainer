@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { navigate, useMode } from '../../lib/route';
 import type { AppMode, ParityAlg } from '../../lib/types';
 import { BrandMark } from '../ui/icons';
 import { Segmented, type SegOption } from '../ui/Segmented';
 
 const MODES: readonly SegOption<AppMode>[] = [
+  { value: 'tutorial', label: 'Learn', className: 'max-md:hidden' },   // phones reach it from the home page
   { value: 'solve', label: 'Solve' },
   { value: 'drill', label: 'Letter drill' },
   { value: 'algs', label: 'Algorithms' },
@@ -33,9 +34,15 @@ interface Props {
 /** Command bar: the brand, the page switch, and whatever controls the current page adds. */
 export function Header({ children }: Props) {
   const mode = useMode();
+  const goHome = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    navigate('home');
+  };
   return (
     <header className="flex flex-none flex-wrap items-center gap-x-5 gap-y-2.5 border-b border-rule px-5 py-2.5 max-md:px-4 max-md:py-3">
-      {brand}
+      <a href="/" onClick={goHome} aria-label="Blindfold Trainer home"
+         className="rounded text-inherit no-underline outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent">{brand}</a>
       <Segmented options={MODES} value={mode} onChange={navigate} label="Mode" />
       {children}
     </header>
