@@ -5,6 +5,7 @@ import type { SolutionRow } from '../../lib/solution';
 import type { CubeData, CubeView, LetterMode, ParityAlg } from '../../lib/types';
 import { Net } from '../cube/Net';
 import { SectionHead } from '../ui/text';
+import { Zoomable } from '../ui/Zoomable';
 import { MemoPanel, memoTargets } from './MemoPanel';
 import { tabVisibility, type PhoneTab } from './PhoneTabs';
 import { RecallCheck } from './RecallCheck';
@@ -39,12 +40,16 @@ export function Rail({ tab, current, edgeRows, hasParity, view, pos, letterMode,
       <RailSection tab="memo" active={tab}>
         <SectionHead title="Memo" meta={current ? memoTargets(current.edge_memo, current.corner_memo) : ''} />
         {current ? (
-          <MemoPanel edgeMemo={current.edge_memo} cornerMemo={current.corner_memo} edgeCycles={current.edge_cycles} cornerCycles={current.corner_cycles} edgeRows={edgeRows} hasParity={hasParity} />
+          <Zoomable label="memo" width={340} maxZoom={2.2}>
+            <MemoPanel edgeMemo={current.edge_memo} cornerMemo={current.corner_memo} edgeCycles={current.edge_cycles} cornerCycles={current.corner_cycles} edgeRows={edgeRows} hasParity={hasParity} />
+          </Zoomable>
         ) : null}
       </RailSection>
       <RailSection tab="net" active={tab}>
         <SectionHead title="Net" meta={pos ? `in step · move ${pos}` : 'scrambled'} />
-        <Net view={view} letterMode={letterMode} absoluteLetters={current?.absolute_letters ?? null} />
+        <Zoomable label="net" className="w-fit">
+          <Net view={view} letterMode={letterMode} absoluteLetters={current?.absolute_letters ?? null} />
+        </Zoomable>
       </RailSection>
       <RailSection tab="check" active={tab}>
         <SectionHead title="Recall check" meta="letters as executed" tight />
