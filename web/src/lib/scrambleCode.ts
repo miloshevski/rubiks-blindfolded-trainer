@@ -30,3 +30,12 @@ export function decodeScramble(code: string): string | null {
   }
   return moves.length ? moves.join(' ') : null;
 }
+
+/** Name of the address parameter that carries a shared scramble ("/solve?s=90a"). */
+export const SCRAMBLE_PARAM = 's';
+
+/** A link to the Solve page with this scramble, or null when it cannot be written as a code. */
+export function shareUrl(scramble: string): string | null {
+  const code = encodeScramble(scramble);
+  return code ? `${location.origin}/solve?${SCRAMBLE_PARAM}=${code}` : null;
+}

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, type FormEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Button, Kbd } from '../ui/Button';
+import { shareUrl } from '../../lib/scrambleCode';
 import { FIELD } from '../ui/text';
 
 interface Props {
@@ -9,12 +10,23 @@ interface Props {
   invalid: boolean;
   onApply: () => void;
   onRandom: () => void;
+  /** The scramble that is loaded, which Share links to. */
+  loaded: string | null;
 }
 
 /** Scramble box (wraps and grows on phones and touch screens, one scrolling line on desktop) + Random / Apply.
  *  On touch screens from tablet width up it takes its own full-width row. */
-export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onRandom }: Props) {
+export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onRandom, loaded }: Props) {
   const box = useRef<HTMLTextAreaElement>(null);
+  const [shareLabel, setShareLabel] = useState('Share');
+  const link = loaded ? shareUrl(loaded) : null;
+
+  const share = async () => {
+    if (!link) return;
+    try { await navigator.clipboard.writeText(link); setShareLabel('Copied'); }
+    catch { setShareLabel('Copy failed'); }
+    setTimeout(() => setShareLabel('Share'), 1200);
+  };
 
   const fit = useCallback(() => {
     const s = box.current;
@@ -47,6 +59,10 @@ export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onR
       </div>
       <Button title="New random scramble (R)" onClick={onRandom} className="max-md:h-11 max-md:flex-[1_1_0]">
         Random <Kbd>R</Kbd>
+      </Button>
+      <Button title={link ? 'Copy a link to this scramble' : 'Only plain face turns (U D L R F B) can be shared'}
+              disabled={!link} onClick={share} className="max-md:h-11 max-md:flex-[1_1_0]">
+        {shareLabel}
       </Button>
       <Button type="submit" variant="primary" className="max-md:h-11 max-md:flex-[1_1_0]">
         Apply <Kbd>↵</Kbd>

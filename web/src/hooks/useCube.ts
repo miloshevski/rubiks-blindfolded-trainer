@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchCube } from '../lib/api';
-import { decodeScramble, encodeScramble } from '../lib/scrambleCode';
+import { decodeScramble, encodeScramble, SCRAMBLE_PARAM as PARAM } from '../lib/scrambleCode';
 import type { CubeData, ParityAlg } from '../lib/types';
-
-const PARAM = 's';
 
 // Kept for the whole visit (and across a refresh, via sessionStorage), so leaving the page and
 // coming back shows the same scramble.

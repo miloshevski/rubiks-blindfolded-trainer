@@ -31,3 +31,21 @@ export function checkSolution(scramble: string, edges: string, corners: string, 
 export function fetchAlgs() {
   return getJson<AlgData>('/api/algs');
 }
+
+/** The letter-pair words as stored in letter-pairs.json (they may be newer than the bundled copy). */
+export function fetchPairs() {
+  return getJson<Record<string, string>>('/api/pairs');
+}
+
+/** Saves one edited pair word into letter-pairs.json; answers the word as stored. */
+export async function savePairWord(pair: string, word: string): Promise<ApiResult<{ pair: string; word: string }>> {
+  try {
+    const res = await fetch('/api/pairs', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pair, word }),
+    });
+    const body = await res.json();
+    return res.ok ? { ok: true, data: body } : { ok: false, error: body.error ?? `HTTP ${res.status}` };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}

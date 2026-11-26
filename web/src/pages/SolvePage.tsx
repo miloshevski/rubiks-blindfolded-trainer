@@ -73,7 +73,7 @@ export default function SolvePage() {
   });
 
   const controls = (
-    <SolveControls scramble={scramble} onScramble={setScramble} error={error} onApply={apply} onRandom={random}
+    <SolveControls scramble={scramble} onScramble={setScramble} error={error} onApply={apply} onRandom={random} loaded={current?.scramble ?? null}
                    moveCount={current ? current.scramble.split(' ').length : null} parity={parity} onParity={changeParity} />
   );
 

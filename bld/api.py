@@ -2,6 +2,7 @@
 and the full algorithm list.  Pure functions; ``server.py`` does the HTTP side."""
 import random
 
+from . import pairs
 from .constants import (CORNER_BUFFER_LETTERS, CORNER_NAMES, CORNER_SETUP, DEFAULT_PARITY,
                         EDGE_BUFFER_LETTERS, EDGE_NAMES, EDGE_SETUP, EDGE_SPECIAL,
                         EDGE_SWAP_MOVE, LETTERS, OPPOSITE, PARITY_ALGS, Y_PERM)
@@ -113,4 +114,15 @@ def _api_check(first):
 
 
 # Endpoint -> handler(first), where first(key, default="") reads one query parameter.
-API = {"/api/cube": _api_cube, "/api/check": _api_check, "/api/algs": lambda first: algs_payload()}
+API = {"/api/cube": _api_cube, "/api/check": _api_check, "/api/algs": lambda first: algs_payload(),
+       "/api/pairs": lambda first: pairs.load_pairs()}
+
+
+def _api_set_pair(body):
+    if not isinstance(body, dict):
+        raise ValueError("expected a JSON object")
+    return pairs.set_pair(body.get("pair"), body.get("word"))
+
+
+# Endpoints that change something: they take a JSON body.
+POST_API = {"/api/pairs": _api_set_pair}

@@ -10,7 +10,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
-from .api import API
+from .api import API, POST_API
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(ROOT, "web", "dist")
@@ -64,6 +64,23 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(404, {"error": "unknown endpoint"})
             return
         self._send_static(url.path)
+
+    def do_POST(self):
+        endpoint = POST_API.get(urlparse(self.path).path)
+        if endpoint is None:
+            self._send_json(404, {"error": "unknown endpoint"})
+            return
+        # Only JSON: a web page on another site cannot send that to us without a CORS preflight.
+        if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json":
+            self._send_json(415, {"error": "send application/json"})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            if not 0 < length <= 10_000:
+                raise ValueError("bad body size")
+            self._send_json(200, endpoint(json.loads(self.rfile.read(length))))
+        except (ValueError, KeyError) as e:     # JSONDecodeError is a ValueError
+            self._send_json(400, {"error": str(e)})
 
     def _send_static(self, url_path):
         path = static_file(url_path)
