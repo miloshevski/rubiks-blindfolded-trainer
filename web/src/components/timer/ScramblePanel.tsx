@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { parseSolution } from '../../lib/solution';
 import type { CubeData } from '../../lib/types';
 import { Button } from '../ui/Button';
-import { IconHint, IconReset } from '../ui/icons';
+import { IconHint, IconReset, iconStar } from '../ui/icons';
 import { ALG, Badge, Meta, tokenClass } from '../ui/text';
 
 interface Props {
@@ -11,10 +11,15 @@ interface Props {
   /** Drawing a new scramble is only allowed between solves. */
   canRescramble: boolean;
   onRescramble: () => void;
+  /** The scramble is saved in the favorites. */
+  saved: boolean;
+  favoriteCount: number;
+  onToggleSaved: () => void;
+  onOpenFavorites: () => void;
 }
 
 /** Top of the Timer: the scramble centred, New and Hint buttons, and the solution in a card under the hint button. */
-export function ScramblePanel({ cube, error, canRescramble, onRescramble }: Props) {
+export function ScramblePanel({ cube, error, canRescramble, onRescramble, saved, favoriteCount, onToggleSaved, onOpenFavorites }: Props) {
   const [hint, setHint] = useState(false);
   const sections = cube && hint ? parseSolution(cube.solution) : [];
   const targets = sections.reduce((n, s) => n + s.rows.length, 0);
@@ -31,6 +36,11 @@ export function ScramblePanel({ cube, error, canRescramble, onRescramble }: Prop
         <Button size="sm" disabled={!canRescramble} onClick={onRescramble} title="New scramble" className="max-md:h-9">{IconReset} New</Button>
         <Button size="sm" variant={hint ? 'active' : 'default'} aria-pressed={hint} onClick={() => setHint(h => !h)}
                 title="Hint: show the solution" className="max-md:h-9">{IconHint} Hint</Button>
+        <Button size="sm" variant={saved ? 'active' : 'default'} aria-pressed={saved} disabled={!cube} onClick={onToggleSaved}
+                title={saved ? 'Saved: press to remove' : 'Save this scramble to favorites'} className="max-md:h-9">{iconStar(saved)} {saved ? 'Saved' : 'Save'}</Button>
+        <Button size="sm" onClick={onOpenFavorites} title="Open the saved scrambles" className="max-md:h-9">
+          Favorites{favoriteCount ? ` ${favoriteCount}` : ''}
+        </Button>
       </div>
       {hint && cube ? (
         <div data-no-hold className="absolute top-full left-1/2 max-h-[60vh] w-[min(520px,calc(100%-24px))] -translate-x-1/2 overflow-auto rounded-md border border-edge bg-raise text-left shadow-[0_12px_32px_rgba(0,0,0,.5)]">

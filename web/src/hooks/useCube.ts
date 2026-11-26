@@ -61,8 +61,10 @@ export function useCube(onLoaded: () => void) {
   }, [load]);
 
   const random = () => { setScramble(''); setUrlScramble(null); load('', parity); };
+  /** Opens a given scramble (a saved favorite): shows it in the box and loads it. */
+  const open = (text: string) => { setScramble(text); setUrlScramble(text); load(text, parity); };
   const apply = () => { const text = scramble.trim(); setUrlScramble(text); load(text, parity); };
   const changeParity = (p: ParityAlg) => { setParity(p); if (current) load(current.scramble, p); };
 
-  return { current, scramble, setScramble, error, parity, changeParity, random, apply };
+  return { current, scramble, setScramble, error, parity, changeParity, random, apply, open };
 }

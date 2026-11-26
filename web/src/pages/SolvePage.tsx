@@ -7,7 +7,9 @@ import { Rail } from '../components/solve/Rail';
 import { SolutionSheet } from '../components/solve/SolutionSheet';
 import { StageColumn } from '../components/solve/StageColumn';
 import type { Speed } from '../components/solve/Transport';
+import { FavoritesDialog } from '../components/favorites/FavoritesDialog';
 import { useCube } from '../hooks/useCube';
+import { useFavorites } from '../hooks/useFavorites';
 import { useGlobalKeys } from '../hooks/useGlobalKeys';
 import { usePlayback } from '../hooks/usePlayback';
 import { usePractice } from '../hooks/usePractice';
@@ -44,7 +46,9 @@ export default function SolvePage() {
   // reads the cube. `onLoaded` goes through a stable callback so the order does not matter.
   const resetRef = useRef<() => void>(() => {});
   const onLoaded = useCallback(() => { clearPractice(); resetRef.current(); }, [clearPractice]);
-  const { current, scramble, setScramble, error, parity, changeParity, random, apply } = useCube(onLoaded);
+  const { current, scramble, setScramble, error, parity, changeParity, random, apply, open } = useCube(onLoaded);
+  const fav = useFavorites();
+  const [favOpen, setFavOpen] = useState(false);
 
   const sections = useMemo(() => (current ? parseSolution(current.solution) : []), [current]);
   const refRows = useMemo(() => sections.flatMap(s => s.rows), [sections]);
@@ -66,6 +70,7 @@ export default function SolvePage() {
 
   // Space play/pause, ←/→ step a move, ⇧←/→ step a target, R random scramble.
   useGlobalKeys((e, t) => {
+    if (document.querySelector('dialog[open]')) return;   // a dialog has the keyboard
     if (e.key === ' ') { if (t?.closest('button')) return; e.preventDefault(); play(); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); if (e.shiftKey) playback.stepTarget(1); else playback.step(1); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); if (e.shiftKey) playback.stepTarget(-1); else playback.step(-1); }
@@ -74,6 +79,8 @@ export default function SolvePage() {
 
   const controls = (
     <SolveControls scramble={scramble} onScramble={setScramble} error={error} onApply={apply} onRandom={random} loaded={current?.scramble ?? null}
+                   saved={fav.has(current?.scramble ?? null)} favoriteCount={fav.favorites.length}
+                   onToggleSaved={() => current && fav.toggle(current.scramble)} onOpenFavorites={() => setFavOpen(true)}
                    moveCount={current ? current.scramble.split(' ').length : null} parity={parity} onParity={changeParity} />
   );
 
@@ -88,6 +95,7 @@ export default function SolvePage() {
       <SolutionSheet tab={tab} sections={sections} parityAlg={parity} moveCount={current ? current.frames.length : null}
                      verified={current ? current.verified : null} solutionText={current?.solution ?? ''}
                      pos={playback.pos} source={playback.source} playing={playback.playing} onJump={jumpToRow} />
+      {favOpen ? <FavoritesDialog favorites={fav.favorites} onLoad={open} onRemove={fav.remove} onClose={() => setFavOpen(false)} /> : null}
     </Workbench>
   );
 }

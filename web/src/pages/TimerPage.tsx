@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Workbench } from '../components/layout/Workbench';
 import { ScramblePanel } from '../components/timer/ScramblePanel';
 import { StatsPanel } from '../components/timer/StatsPanel';
 import { TimerPanel } from '../components/timer/TimerPanel';
+import { FavoritesDialog } from '../components/favorites/FavoritesDialog';
+import { useFavorites } from '../hooks/useFavorites';
 import { useGlobalKeys, useGlobalKeyUp } from '../hooks/useGlobalKeys';
 import { usePointerHold } from '../hooks/usePointerHold';
 import { useTimer } from '../hooks/useTimer';
@@ -17,6 +20,8 @@ const IGNORED = /^(Tab|Escape|F\d+|Shift|Control|Alt|Meta|CapsLock)$/;
 /** Timer: the scramble, a stopwatch (tap or hold a key), penalties, running statistics and the cube net. */
 export default function TimerPage() {
   const t = useTimer();
+  const fav = useFavorites();
+  const [favOpen, setFavOpen] = useState(false);
 
   // Hold any key to arm the timer (it turns green), release it to start, press any key to stop.
   // Keys that mean something else (Tab, Esc, F-keys) never arm it, and Enter on a focused button still presses it.
@@ -44,10 +49,13 @@ export default function TimerPage() {
 
   return (
     <Workbench layout={LAYOUT}>
-      <ScramblePanel key={t.cube?.scramble} cube={t.cube} error={t.error} canRescramble={t.phase === 'idle'} onRescramble={t.nextScramble} />
+      <ScramblePanel key={t.cube?.scramble} cube={t.cube} error={t.error} canRescramble={t.phase === 'idle'} onRescramble={t.nextScramble}
+                     saved={fav.has(t.cube?.scramble ?? null)} favoriteCount={fav.favorites.length}
+                     onToggleSaved={() => t.cube && fav.toggle(t.cube.scramble)} onOpenFavorites={() => setFavOpen(true)} />
       <TimerPanel phase={t.phase} display={t.display} last={t.last} solves={t.solves} onTap={t.tap}
                   onPenalty={t.setPenalty} onDiscard={t.discard} />
       <StatsPanel solves={t.solves} cube={t.cube} />
+      {favOpen ? <FavoritesDialog favorites={fav.favorites} onLoad={t.loadScramble} onRemove={fav.remove} onClose={() => setFavOpen(false)} /> : null}
     </Workbench>
   );
 }

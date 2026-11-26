@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Button, Kbd } from '../ui/Button';
 import { shareUrl } from '../../lib/scrambleCode';
+import { iconStar } from '../ui/icons';
+import { IconButton } from '../ui/IconButton';
 import { FIELD } from '../ui/text';
 
 interface Props {
@@ -12,11 +14,16 @@ interface Props {
   onRandom: () => void;
   /** The scramble that is loaded, which Share links to. */
   loaded: string | null;
+  /** The loaded scramble is saved in the favorites. */
+  saved: boolean;
+  favoriteCount: number;
+  onToggleSaved: () => void;
+  onOpenFavorites: () => void;
 }
 
 /** Scramble box (wraps and grows on phones and touch screens, one scrolling line on desktop) + Random / Apply.
  *  On touch screens from tablet width up it takes its own full-width row. */
-export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onRandom, loaded }: Props) {
+export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onRandom, loaded, saved, favoriteCount, onToggleSaved, onOpenFavorites }: Props) {
   const box = useRef<HTMLTextAreaElement>(null);
   const [shareLabel, setShareLabel] = useState('Share');
   const link = loaded ? shareUrl(loaded) : null;
@@ -59,6 +66,12 @@ export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onR
       </div>
       <Button title="New random scramble (R)" onClick={onRandom} className="max-md:h-11 max-md:flex-[1_1_0]">
         Random <Kbd>R</Kbd>
+      </Button>
+      <IconButton label={saved ? 'Remove from favorites' : 'Save to favorites'} title={saved ? 'Saved: press to remove' : 'Save this scramble to favorites'}
+                  aria-pressed={saved} disabled={!loaded} onClick={onToggleSaved}
+                  className={saved ? 'border-accent text-accent' : 'disabled:cursor-default disabled:text-disabled'}>{iconStar(saved)}</IconButton>
+      <Button title="Open the saved scrambles" onClick={onOpenFavorites} className="max-md:h-11 max-md:flex-[1_1_0]">
+        Favorites{favoriteCount ? ` ${favoriteCount}` : ''}
       </Button>
       <Button title={link ? 'Copy a link to this scramble' : 'Only plain face turns (U D L R F B) can be shared'}
               disabled={!link} onClick={share} className="max-md:h-11 max-md:flex-[1_1_0]">

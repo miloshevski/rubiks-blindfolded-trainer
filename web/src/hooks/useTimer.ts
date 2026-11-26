@@ -20,10 +20,11 @@ export function useTimer() {
   const frame = useRef(0);
   const request = useRef(0);
 
-  const nextScramble = useCallback(async () => {
+  /** Loads `text` as the scramble (empty: a random one). */
+  const nextScramble = useCallback(async (text = '') => {
     const id = ++request.current;
     setCube(null);
-    const res = await fetchCube('', '1');
+    const res = await fetchCube(text, '1');
     if (id !== request.current) return;   // a newer scramble was asked for
     if (res.ok) { setCube(res.data); setError(null); }
     else setError(res.error);
@@ -87,6 +88,13 @@ export function useTimer() {
     if (phase === 'armed') { if (cube) start(); else setPhase('idle'); }
   }, [phase, cube, start]);
 
+  /** Uses a given scramble (a saved favorite) for the next solve; not while the clock is running or armed. */
+  const loadScramble = useCallback((text: string) => {
+    if (phase === 'running' || phase === 'armed') return;
+    setPhase('idle');
+    void nextScramble(text);
+  }, [phase, nextScramble]);
+
   /** A held key or finger is cancelled (the browser took the touch): an armed timer stands down instead of starting. */
   const disarm = useCallback(() => { if (phase === 'armed') setPhase('idle'); }, [phase]);
 
@@ -97,5 +105,5 @@ export function useTimer() {
     else if (phase === 'done') next();
   }, [phase, stop, start, next]);
 
-  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, keyDown, keyUp, disarm, tap, setPenalty, discard, nextScramble };
+  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, keyDown, keyUp, disarm, tap, setPenalty, discard, nextScramble: () => nextScramble(), loadScramble };
 }

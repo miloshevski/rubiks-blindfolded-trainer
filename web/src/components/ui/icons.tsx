@@ -64,3 +64,11 @@ export const IconTrash = (
     <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.6 8.5h6.8l.6-8.5M6.7 7v3.5M9.3 7v3.5" />
   </svg>
 );
+
+/** A star: outline, or filled when `filled` (a saved scramble). */
+export const iconStar = (filled: boolean) => (
+  <svg width="15" height="15" viewBox="0 0 16 16" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.4"
+       strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M8 1.8l1.9 4 4.3.5-3.2 2.9.9 4.3L8 11.3 4.1 13.5l.9-4.3L1.8 6.3l4.3-.5z" />
+  </svg>
+);
