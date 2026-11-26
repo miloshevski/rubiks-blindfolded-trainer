@@ -97,5 +97,5 @@ export function useTimer() {
     else if (phase === 'done') next();
   }, [phase, stop, start, next]);
 
-  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, keyDown, keyUp, disarm, tap, nextSolve: next, setPenalty, discard, nextScramble };
+  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, keyDown, keyUp, disarm, tap, setPenalty, discard, nextScramble };
 }

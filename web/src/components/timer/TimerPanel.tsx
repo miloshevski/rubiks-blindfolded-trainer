@@ -1,9 +1,10 @@
-import type { MouseEvent, RefObject } from 'react';
+import { useState, type KeyboardEvent, type MouseEvent, type RefObject } from 'react';
 import { cn } from '../../lib/cn';
 import { formatSolve, type Penalty, type Solve } from '../../lib/timer';
 import type { TimerPhase } from '../../hooks/useTimer';
-import { Button, Kbd } from '../ui/Button';
+import { Button } from '../ui/Button';
 import { IconTrash } from '../ui/icons';
+import { SolvesDialog } from './SolvesDialog';
 
 interface Props {
   phase: TimerPhase;
@@ -13,7 +14,6 @@ interface Props {
   solves: readonly Solve[];
   /** Enter on the focused time button. */
   onTap: () => void;
-  onNext: () => void;
   onPenalty: (p: Penalty) => void;
   onDiscard: () => void;
 }
@@ -30,11 +30,15 @@ const RECENT = 12;
 const PHONE_ACTION = 'max-md:h-[38px] max-md:min-w-[60px] max-md:px-3';
 
 /** Middle of the Timer: the recent solves down the left, the clock (tap it to start or stop), and the penalty buttons after a solve. */
-export function TimerPanel({ phase, display, last, solves, onTap, onNext, onPenalty, onDiscard }: Props) {
+export function TimerPanel({ phase, display, last, solves, onTap, onPenalty, onDiscard }: Props) {
   const text = phase === 'done' && last ? formatSolve(last) : '0.00';
   const tone = last?.penalty === 'dnf' ? 'text-bad' : last?.penalty === 'plus2' ? 'text-accent' : phase === 'armed' ? 'text-ok' : phase === 'idle' ? 'text-ink-2' : 'text-ink';
   const solveNo = solves.length + (phase === 'done' ? 0 : 1);
   const recent = solves.slice(-RECENT).reverse();
+  const [allOpen, setAllOpen] = useState(false);
+  const listKey = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') { e.preventDefault(); setAllOpen(true); }
+  };
   // Buttons drop focus after a click so the space bar always means start / stop, never "press that button again".
   const blurAfter = (fn: () => void) => (e: { currentTarget: HTMLElement }) => { e.currentTarget.blur(); fn(); };
 
@@ -44,12 +48,18 @@ export function TimerPanel({ phase, display, last, solves, onTap, onNext, onPena
 
   return (
     <section className="relative flex min-h-[220px] min-w-0 flex-col items-center justify-center gap-6 overflow-hidden p-5 [grid-area:timer] max-md:gap-3 max-md:px-3 max-md:py-2.5 max-md:[@media(max-height:700px)]:gap-2 md:[@media(max-height:760px)]:gap-4" aria-label="Timer">
-      <ol aria-label="Recent solves"
-          className="absolute top-5 bottom-5 left-6 m-0 flex list-none flex-col gap-1 overflow-hidden p-0 font-mono text-[14px] leading-normal font-medium tabular-nums max-md:top-2.5 max-md:bottom-2.5 max-md:left-3 max-md:gap-0.5 max-md:text-[12px]">
-        {recent.map((r, i) => (
-          <li key={solves.length - i} className={r.penalty === 'dnf' ? 'text-bad' : r.penalty === 'plus2' ? 'text-accent' : 'text-ink'}>{formatSolve(r)}</li>
-        ))}
-      </ol>
+      {recent.length ? (
+        <div role="button" tabIndex={0} aria-label="Show all solves" title="Show all solves" onClick={() => setAllOpen(true)} onKeyDown={listKey}
+             className="absolute top-5 bottom-5 left-6 cursor-pointer rounded-sm outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent max-md:top-2.5 max-md:bottom-2.5 max-md:left-3">
+          <ol aria-label="Recent solves"
+              className="m-0 flex h-full list-none flex-col gap-1 overflow-hidden p-0 font-mono text-[14px] leading-normal font-medium tabular-nums max-md:gap-0.5 max-md:text-[12px]">
+            {recent.map((r, i) => (
+              <li key={solves.length - i} className={r.penalty === 'dnf' ? 'text-bad' : r.penalty === 'plus2' ? 'text-accent' : 'text-ink'}>{formatSolve(r)}</li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+      {allOpen ? <SolvesDialog solves={solves} onClose={() => setAllOpen(false)} /> : null}
       <span className="font-mono text-[11px] text-ink-3">Solve {solveNo}</span>
       <button type="button" data-hold onClick={click} aria-label={phase === 'running' ? 'Stop timer' : 'Start timer'}
               className="cursor-pointer border-0 bg-transparent p-0 text-inherit touch-none select-none [-webkit-tap-highlight-color:transparent]">
@@ -62,18 +72,13 @@ export function TimerPanel({ phase, display, last, solves, onTap, onNext, onPena
       <div className="h-3.5 text-[12px] leading-[14px] text-ink-3" aria-live="polite">{STATUS[phase]}</div>
 
       {phase === 'done' && (
-        <>
-          <div className="flex flex-wrap justify-center gap-2.5 max-md:gap-2">
-            <Button size="action" className={PHONE_ACTION} onClick={blurAfter(onDiscard)}>{IconTrash} Discard</Button>
-            <Button size="action" className={`min-w-[76px] ${PHONE_ACTION}`} variant={last?.penalty === 'dnf' ? 'active' : 'default'} aria-pressed={last?.penalty === 'dnf'}
-                    onClick={blurAfter(() => onPenalty('dnf'))}>DNF</Button>
-            <Button size="action" className={`min-w-[76px] ${PHONE_ACTION}`} variant={last?.penalty === 'plus2' ? 'active' : 'default'} aria-pressed={last?.penalty === 'plus2'}
-                    onClick={blurAfter(() => onPenalty('plus2'))}>+2 s</Button>
-          </div>
-          <Button size="lg" variant="primary" className="w-[200px] max-md:h-[42px] max-md:w-[180px]" onClick={blurAfter(onNext)}>
-            Next solve <span className="max-md:hidden"><Kbd>Space</Kbd></span>
-          </Button>
-        </>
+        <div className="flex flex-wrap justify-center gap-2.5 max-md:gap-2">
+          <Button size="action" className={PHONE_ACTION} onClick={blurAfter(onDiscard)}>{IconTrash} Discard</Button>
+          <Button size="action" className={`min-w-[76px] ${PHONE_ACTION}`} variant={last?.penalty === 'dnf' ? 'active' : 'default'} aria-pressed={last?.penalty === 'dnf'}
+                  onClick={blurAfter(() => onPenalty('dnf'))}>DNF</Button>
+          <Button size="action" className={`min-w-[76px] ${PHONE_ACTION}`} variant={last?.penalty === 'plus2' ? 'active' : 'default'} aria-pressed={last?.penalty === 'plus2'}
+                  onClick={blurAfter(() => onPenalty('plus2'))}>+2 s</Button>
+        </div>
       )}
     </section>
   );

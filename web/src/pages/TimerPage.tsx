@@ -21,17 +21,19 @@ export default function TimerPage() {
   // Hold any key to arm the timer (it turns green), release it to start, press any key to stop.
   // Keys that mean something else (Tab, Esc, F-keys) never arm it, and Enter on a focused button still presses it.
   useGlobalKeys((e, target) => {
+    if (document.querySelector('dialog[open]')) return;   // a dialog (all solves, the enlarged net) has the keyboard
     const space = e.key === ' ';
     if (space) e.preventDefault();   // no page scroll, no button click on release
     if (e.repeat) return;
     if (t.phase !== 'running') {
-      if (IGNORED.test(e.key) || (e.key === 'Enter' && target?.closest('button'))) return;
-      if (target?.closest('button') && !space) return;
+      if (IGNORED.test(e.key) || (e.key === 'Enter' && target?.closest('button, [role=button]'))) return;
+      if (target?.closest('button, [role=button]') && !space) return;
     }
     if (space) (document.activeElement as HTMLElement | null)?.blur();
     t.keyDown();
   });
   useGlobalKeyUp(e => {
+    if (document.querySelector('dialog[open]')) return;
     if (e.key === ' ') e.preventDefault();
     if (IGNORED.test(e.key)) return;
     t.keyUp();
@@ -43,7 +45,7 @@ export default function TimerPage() {
   return (
     <Workbench layout={LAYOUT}>
       <ScramblePanel key={t.cube?.scramble} cube={t.cube} error={t.error} canRescramble={t.phase === 'idle'} onRescramble={t.nextScramble} />
-      <TimerPanel phase={t.phase} display={t.display} last={t.last} solves={t.solves} onTap={t.tap} onNext={t.nextSolve}
+      <TimerPanel phase={t.phase} display={t.display} last={t.last} solves={t.solves} onTap={t.tap}
                   onPenalty={t.setPenalty} onDiscard={t.discard} />
       <StatsPanel solves={t.solves} cube={t.cube} />
     </Workbench>
