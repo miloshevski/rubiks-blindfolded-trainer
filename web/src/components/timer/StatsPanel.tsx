@@ -33,11 +33,11 @@ export const StatsPanel = memo(function StatsPanel({ solves, cube }: { solves: r
         <Stat label="Count" value={String(s.count)} />
       </dl>
       {cube ? (
-        <Zoomable label="cube net" tapAnywhere className="rounded-md border border-rule bg-sunk p-2.5 transition-colors duration-[120ms] hover:border-edge-2 max-md:p-1.5"
+        <Zoomable label="cube net" tapAnywhere className="rounded-sm"
                   enlarged={<Net view={cube} letterMode="off" absoluteLetters={null} />}>
           <Net view={cube} letterMode="off" absoluteLetters={null} compact />
         </Zoomable>
-      ) : <div className="size-[100px] max-md:size-[86px]" aria-hidden />}
+      ) : <div className="h-[94px] w-[126px] max-md:h-16 max-md:w-[86px]" aria-hidden />}
       <dl className={cn(SIDE, 'justify-self-end')}>
         {s.ao.map(a => <Stat key={a.n} label={`Ao${a.n}`} value={show(a.value)} />)}
       </dl>
