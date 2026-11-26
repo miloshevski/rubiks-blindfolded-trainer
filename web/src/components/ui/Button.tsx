@@ -11,7 +11,7 @@ const VARIANT = {
   active: 'border-accent bg-accent-bg text-accent enabled:hover:bg-accent-bg',
 };
 const SIZE = { md: 'h-8 px-3 text-[13px] touch:h-10', sm: 'h-7 px-2.5 text-[12px] touch:h-9',
-  lg: 'h-11 px-6 text-[14px] touch:h-12' };
+  lg: 'h-11 px-6 text-[14px] touch:h-12', action: 'h-10 px-4 text-[13px]' };
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof VARIANT;

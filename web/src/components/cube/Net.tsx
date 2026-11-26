@@ -1,3 +1,4 @@
+import { cn } from '../../lib/cn';
 import { stickerColor, stickerLetter } from '../../lib/cube';
 import type { CubeView, Face, FaceStrings, LetterMode } from '../../lib/types';
 import { Sticker } from './Sticker';
@@ -10,17 +11,20 @@ interface Props {
   view: CubeView | null;
   letterMode: LetterMode;
   absoluteLetters: FaceStrings | null;
+  /** A small, letterless version (the Timer's summary). */
+  compact?: boolean;
 }
 
-export function Net({ view, letterMode, absoluteLetters }: Props) {
+export function Net({ view, letterMode, absoluteLetters, compact }: Props) {
   return (
-    <div className="grid grid-cols-[repeat(4,64px)] grid-rows-[repeat(3,64px)] gap-[5px]" role="img" aria-label="Unfolded cube">
-      <div className="self-end font-mono text-[10.5px] leading-[1.6] text-ink-3 [grid-area:1/1]">U · top<br />F · front</div>
+    <div className={cn('grid', compact ? 'grid-cols-[repeat(4,30px)] grid-rows-[repeat(3,30px)] gap-0.5 max-md:grid-cols-[repeat(4,20px)] max-md:grid-rows-[repeat(3,20px)]' : 'grid-cols-[repeat(4,64px)] grid-rows-[repeat(3,64px)] gap-[5px]')}
+         role="img" aria-label="Unfolded cube">
+      {compact ? null : <div className="self-end font-mono text-[10.5px] leading-[1.6] text-ink-3 [grid-area:1/1]">U · top<br />F · front</div>}
       {NET_FACES.map(face => (
-        <div key={face} className="grid grid-cols-[repeat(3,20px)] grid-rows-[repeat(3,20px)] gap-0.5"
+        <div key={face} className={cn('grid', compact ? 'grid-cols-[repeat(3,1fr)] grid-rows-[repeat(3,1fr)] gap-px' : 'grid-cols-[repeat(3,20px)] grid-rows-[repeat(3,20px)] gap-0.5')}
              style={{ gridArea: NET_AREA[face] }}>
           {Array.from({ length: 9 }, (_, i) => (
-            <Sticker key={i} className="rounded-[3px] font-mono text-[10px] leading-[normal] font-semibold"
+            <Sticker key={i} className={cn('font-mono leading-[normal] font-semibold', compact ? 'rounded-[1px] text-[0px]' : 'rounded-[3px] text-[10px]')}
                      color={stickerColor(view, face, i)}
                      letter={stickerLetter(view, letterMode, absoluteLetters, face, i)} />
           ))}

@@ -40,14 +40,14 @@ export function Rail({ tab, current, edgeRows, hasParity, view, pos, letterMode,
       <RailSection tab="memo" active={tab}>
         <SectionHead title="Memo" meta={current ? memoTargets(current.edge_memo, current.corner_memo) : ''} />
         {current ? (
-          <Zoomable label="memo" width={340} maxZoom={2.2}>
+          <Zoomable label="memo" width={340} maxZoom={2.2} className="rounded">
             <MemoPanel edgeMemo={current.edge_memo} cornerMemo={current.corner_memo} edgeCycles={current.edge_cycles} cornerCycles={current.corner_cycles} edgeRows={edgeRows} hasParity={hasParity} />
           </Zoomable>
         ) : null}
       </RailSection>
       <RailSection tab="net" active={tab}>
         <SectionHead title="Net" meta={pos ? `in step · move ${pos}` : 'scrambled'} />
-        <Zoomable label="net" className="w-fit">
+        <Zoomable label="net" className="w-fit rounded">
           <Net view={view} letterMode={letterMode} absoluteLetters={current?.absolute_letters ?? null} />
         </Zoomable>
       </RailSection>

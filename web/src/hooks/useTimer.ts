@@ -87,5 +87,12 @@ export function useTimer() {
     if (phase === 'armed') { if (cube) start(); else setPhase('idle'); }
   }, [phase, cube, start]);
 
-  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, keyDown, keyUp, setPenalty, discard, nextScramble };
+  /** A tap on the time: stops a running clock, starts an idle one at once (no holding), and from a finished solve moves on to the next. */
+  const tap = useCallback(() => {
+    if (phase === 'running') stop();
+    else if (phase === 'idle') start();
+    else if (phase === 'done') next();
+  }, [phase, stop, start, next]);
+
+  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, keyDown, keyUp, tap, nextSolve: next, setPenalty, discard, nextScramble };
 }

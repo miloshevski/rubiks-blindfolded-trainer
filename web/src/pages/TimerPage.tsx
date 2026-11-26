@@ -5,19 +5,15 @@ import { TimerPanel } from '../components/timer/TimerPanel';
 import { useGlobalKeys, useGlobalKeyUp } from '../hooks/useGlobalKeys';
 import { useTimer } from '../hooks/useTimer';
 
-// Phone: scramble, timer, stats stacked. From `md`: scramble and stats share a column beside the timer.
-// From `xl`: three columns that fit the window.
+// One column: the scramble on top, the clock filling the middle, statistics and the cube net along the bottom.
+// On a phone the page may scroll inside <main> when those do not all fit.
 const LAYOUT =
-  'grid-cols-[minmax(0,1fr)] [grid-template-areas:"timer"_"scramble"_"stats"] max-md:grid-rows-[repeat(3,max-content)] max-md:overflow-auto '
-  + 'md:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] md:[grid-template-areas:"timer_scramble"_"timer_stats"] '
-  + 'md:[&>section+section]:border-l md:[&>section+section]:border-rule '
-  + 'xl:grid-cols-[minmax(320px,1fr)_minmax(0,2fr)_minmax(280px,1fr)] xl:[grid-template-areas:"scramble_timer_stats"] '
-  + 'xl:grid-rows-[minmax(0,1fr)]';
+  'grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] [grid-template-areas:"scramble"_"timer"_"bar"] max-md:overflow-auto';
 
 /** Keys that never arm the timer. */
 const IGNORED = /^(Tab|Escape|F\d+|Shift|Control|Alt|Meta|CapsLock)$/;
 
-/** Timer: a scramble with its unfolded cube, a stopwatch, penalties, and running statistics. */
+/** Timer: the scramble, a stopwatch (tap or hold a key), penalties, running statistics and the cube net. */
 export default function TimerPage() {
   const t = useTimer();
 
@@ -42,10 +38,10 @@ export default function TimerPage() {
 
   return (
     <Workbench layout={LAYOUT}>
-      <TimerPanel phase={t.phase} display={t.display} last={t.last} solveNo={t.solves.length + (t.phase === 'done' ? 0 : 1)}
-                  onPenalty={t.setPenalty} onDiscard={t.discard} />
       <ScramblePanel key={t.cube?.scramble} cube={t.cube} error={t.error} canRescramble={t.phase === 'idle'} onRescramble={t.nextScramble} />
-      <StatsPanel solves={t.solves} />
+      <TimerPanel phase={t.phase} display={t.display} last={t.last} solves={t.solves} onTap={t.tap} onNext={t.nextSolve}
+                  onPenalty={t.setPenalty} onDiscard={t.discard} />
+      <StatsPanel solves={t.solves} cube={t.cube} />
     </Workbench>
   );
 }

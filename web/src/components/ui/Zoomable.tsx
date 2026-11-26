@@ -31,17 +31,21 @@ function Fit({ children, width, maxZoom }: FitProps) {
 }
 
 interface Props {
-  /** What is shown in place, and again enlarged. */
+  /** What is shown in place (and, without `enlarged`, again in the dialog). */
   children: ReactNode;
+  /** A different, bigger rendering for the dialog. */
+  enlarged?: ReactNode;
   label: string;
   /** Natural width of the enlarged content, for content that wraps (see `Fit`). */
   width?: number;
   maxZoom?: number;
   className?: string;
+  /** Full-screen dim overlay that closes on any tap, with a hint, instead of a card with a Close button. */
+  tapAnywhere?: boolean;
 }
 
 /** Click or tap (or Enter / Space) to see the content enlarged in a dialog; Esc, the Close button or a click outside closes it. */
-export function Zoomable({ children, label, width, maxZoom = 3, className }: Props) {
+export function Zoomable({ children, enlarged, label, width, maxZoom = 3, className, tapAnywhere }: Props) {
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
 
@@ -58,15 +62,24 @@ export function Zoomable({ children, label, width, maxZoom = 3, className }: Pro
     <>
       <div role="button" tabIndex={0} title="Click to enlarge" aria-label={`Enlarge ${label}`}
            onClick={() => setOpen(true)} onKeyDown={keyDown}
-           className={cn('cursor-zoom-in rounded outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent', className)}>
+           className={cn('cursor-zoom-in outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent', className)}>
         {children}
       </div>
-      {open ? (
+      {open && tapAnywhere ? (
+        <dialog ref={dialog} aria-label={label} onClose={() => setOpen(false)} onClick={() => dialog.current?.close()}
+                className="m-0 h-dvh max-h-none w-screen max-w-none cursor-pointer overflow-hidden border-0 bg-transparent p-4 text-ink-3 backdrop:bg-bg/90 open:flex open:flex-col open:items-center open:justify-center open:gap-4">
+          <div className="rounded-lg border border-edge bg-sunk p-3.5">
+            <Fit width={width} maxZoom={maxZoom}>{enlarged ?? children}</Fit>
+          </div>
+          <span className="text-[12px]">Tap anywhere to close</span>
+        </dialog>
+      ) : null}
+      {open && !tapAnywhere ? (
         <dialog ref={dialog} aria-label={label} onClose={() => setOpen(false)}
                 onClick={e => { if (e.target === e.currentTarget) dialog.current?.close(); }}
                 className="m-auto max-h-[96vh] max-w-[96vw] overflow-auto rounded-md border border-line bg-bg p-5 text-ink backdrop:bg-black/75">
           <div className="flex justify-center">
-            <Fit width={width} maxZoom={maxZoom}>{children}</Fit>
+            <Fit width={width} maxZoom={maxZoom}>{enlarged ?? children}</Fit>
           </div>
           <div className="mt-4 flex justify-center">
             <button type="button" onClick={() => dialog.current?.close()}
