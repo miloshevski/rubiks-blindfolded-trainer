@@ -33,7 +33,7 @@ export function ScramblePanel({ cube, error, canRescramble, onRescramble }: Prop
                 title="Hint: show the solution" className="max-md:h-9">{IconHint} Hint</Button>
       </div>
       {hint && cube ? (
-        <div className="absolute top-full left-1/2 max-h-[60vh] w-[min(520px,calc(100%-24px))] -translate-x-1/2 overflow-auto rounded-md border border-edge bg-raise text-left shadow-[0_12px_32px_rgba(0,0,0,.5)]">
+        <div data-no-hold className="absolute top-full left-1/2 max-h-[60vh] w-[min(520px,calc(100%-24px))] -translate-x-1/2 overflow-auto rounded-md border border-edge bg-raise text-left shadow-[0_12px_32px_rgba(0,0,0,.5)]">
           <div className="flex items-center justify-between border-b border-rule px-3 py-2">
             <span className="text-[11px] font-medium tracking-[.08em] text-ink-3 uppercase">Solution</span>
             <Meta>{targets} targets</Meta>

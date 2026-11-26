@@ -3,12 +3,13 @@ import { ScramblePanel } from '../components/timer/ScramblePanel';
 import { StatsPanel } from '../components/timer/StatsPanel';
 import { TimerPanel } from '../components/timer/TimerPanel';
 import { useGlobalKeys, useGlobalKeyUp } from '../hooks/useGlobalKeys';
+import { usePointerHold } from '../hooks/usePointerHold';
 import { useTimer } from '../hooks/useTimer';
 
 // One column: the scramble on top, the clock filling the middle, statistics and the cube net along the bottom.
 // On a phone the page may scroll inside <main> when those do not all fit.
 const LAYOUT =
-  'grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] [grid-template-areas:"scramble"_"timer"_"bar"] max-md:overflow-auto';
+  'grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] [grid-template-areas:"scramble"_"timer"_"bar"] max-md:overflow-auto select-none [-webkit-touch-callout:none]';
 
 /** Keys that never arm the timer. */
 const IGNORED = /^(Tab|Escape|F\d+|Shift|Control|Alt|Meta|CapsLock)$/;
@@ -36,10 +37,13 @@ export default function TimerPage() {
     t.keyUp();
   });
 
+  // Touch anywhere on the page body works like the space bar (the clock also answers the mouse).
+  usePointerHold({ onPress: t.keyDown, onRelease: t.keyUp, onCancel: t.disarm });
+
   return (
     <Workbench layout={LAYOUT}>
       <ScramblePanel key={t.cube?.scramble} cube={t.cube} error={t.error} canRescramble={t.phase === 'idle'} onRescramble={t.nextScramble} />
-      <TimerPanel phase={t.phase} display={t.display} last={t.last} solves={t.solves} onPress={t.keyDown} onRelease={t.keyUp} onCancel={t.disarm} onTap={t.tap} onNext={t.nextSolve}
+      <TimerPanel phase={t.phase} display={t.display} last={t.last} solves={t.solves} onTap={t.tap} onNext={t.nextSolve}
                   onPenalty={t.setPenalty} onDiscard={t.discard} />
       <StatsPanel solves={t.solves} cube={t.cube} />
     </Workbench>

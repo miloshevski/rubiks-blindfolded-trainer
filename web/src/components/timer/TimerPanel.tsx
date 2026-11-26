@@ -1,4 +1,4 @@
-import type { MouseEvent, PointerEvent, RefObject } from 'react';
+import type { MouseEvent, RefObject } from 'react';
 import { cn } from '../../lib/cn';
 import { formatSolve, type Penalty, type Solve } from '../../lib/timer';
 import type { TimerPhase } from '../../hooks/useTimer';
@@ -11,10 +11,6 @@ interface Props {
   /** The solve just finished (null otherwise). */
   last: Solve | undefined;
   solves: readonly Solve[];
-  /** Finger or mouse goes down on the time / comes up / is cancelled: the same as holding and releasing a key. */
-  onPress: () => void;
-  onRelease: () => void;
-  onCancel: () => void;
   /** Enter on the focused time button. */
   onTap: () => void;
   onNext: () => void;
@@ -23,10 +19,10 @@ interface Props {
 }
 
 const STATUS: Record<TimerPhase, string> = {
-  idle: 'Hold the time (or Space), release to start',
+  idle: 'Hold anywhere (or Space), release to start',
   armed: 'Release to start',
-  running: 'Tap the time or press any key to stop',
-  done: 'Solve saved · hold the time for the next',
+  running: 'Tap anywhere or press any key to stop',
+  done: 'Solve saved · hold anywhere for the next',
 };
 
 const RECENT = 12;
@@ -34,7 +30,7 @@ const RECENT = 12;
 const PHONE_ACTION = 'max-md:h-[38px] max-md:min-w-[60px] max-md:px-3';
 
 /** Middle of the Timer: the recent solves down the left, the clock (tap it to start or stop), and the penalty buttons after a solve. */
-export function TimerPanel({ phase, display, last, solves, onPress, onRelease, onCancel, onTap, onNext, onPenalty, onDiscard }: Props) {
+export function TimerPanel({ phase, display, last, solves, onTap, onNext, onPenalty, onDiscard }: Props) {
   const text = phase === 'done' && last ? formatSolve(last) : '0.00';
   const tone = last?.penalty === 'dnf' ? 'text-bad' : last?.penalty === 'plus2' ? 'text-accent' : phase === 'armed' ? 'text-ok' : phase === 'idle' ? 'text-ink-2' : 'text-ink';
   const solveNo = solves.length + (phase === 'done' ? 0 : 1);
@@ -42,15 +38,8 @@ export function TimerPanel({ phase, display, last, solves, onPress, onRelease, o
   // Buttons drop focus after a click so the space bar always means start / stop, never "press that button again".
   const blurAfter = (fn: () => void) => (e: { currentTarget: HTMLElement }) => { e.currentTarget.blur(); fn(); };
 
-  // The time works like the space bar: hold it (it turns green), let go to start, touch it again to stop.
-  // The pointer is captured so letting go off the button still counts.
-  const down = (e: PointerEvent<HTMLButtonElement>) => {
-    if (e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    e.currentTarget.blur();
-    onPress();
-  };
-  // Enter on the focused button (a mouse or finger has detail > 0 and was handled above).
+  // Holding and releasing (finger anywhere, or the mouse on the clock) is handled page-wide by usePointerHold;
+  // this is only Enter on the focused button (a mouse or finger click has detail > 0).
   const click = (e: MouseEvent<HTMLButtonElement>) => { if (e.detail === 0) onTap(); };
 
   return (
@@ -62,7 +51,7 @@ export function TimerPanel({ phase, display, last, solves, onPress, onRelease, o
         ))}
       </ol>
       <span className="font-mono text-[11px] text-ink-3">Solve {solveNo}</span>
-      <button type="button" onPointerDown={down} onPointerUp={onRelease} onPointerCancel={onCancel} onContextMenu={e => e.preventDefault()} onClick={click} aria-label={phase === 'running' ? 'Stop timer' : 'Start timer'}
+      <button type="button" data-hold onClick={click} aria-label={phase === 'running' ? 'Stop timer' : 'Start timer'}
               className="cursor-pointer border-0 bg-transparent p-0 text-inherit touch-none select-none [-webkit-tap-highlight-color:transparent]">
         {/* key: the running clock rewrites this node's text directly, so each phase gets a fresh node */}
         <div key={phase} ref={display} role="timer" aria-live="off"
