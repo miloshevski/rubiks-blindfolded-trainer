@@ -39,7 +39,7 @@ export function Rail({ tab, current, edgeRows, hasParity, view, pos, letterMode,
       <RailSection tab="memo" active={tab}>
         <SectionHead title="Memo" meta={current ? memoTargets(current.edge_memo, current.corner_memo) : ''} />
         {current ? (
-          <MemoPanel edgeMemo={current.edge_memo} cornerMemo={current.corner_memo} edgeRows={edgeRows} hasParity={hasParity} />
+          <MemoPanel edgeMemo={current.edge_memo} cornerMemo={current.corner_memo} edgeCycles={current.edge_cycles} cornerCycles={current.corner_cycles} edgeRows={edgeRows} hasParity={hasParity} />
         ) : null}
       </RailSection>
       <RailSection tab="net" active={tab}>

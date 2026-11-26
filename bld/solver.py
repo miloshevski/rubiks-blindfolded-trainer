@@ -19,32 +19,40 @@ from .cube import (CORNER, EDGE, apply_alg, apply_algs, home_letter, is_solved,
                    piece_of, piece_solved, solved_state)
 
 
-def trace_cycles(state, kind) -> Tuple[str, ...]:
-    """Memo letters for ``kind`` (EDGE or CORNER), read from ``state``.
+def trace_groups(state, kind):
+    """The memo for ``kind`` (EDGE or CORNER), read from ``state``, split into its cycles.
 
-    Static sticker tracing from the buffer: the target is the home letter of
-    the sticker in the traced buffer slot, then of the sticker in the previous
-    target's slot, and so on.  When the cycle returns to the buffer piece it
-    is closed and the memo breaks into the unsolved piece whose lowest sticker
-    letter is alphabetically first; that cycle is closed when the trace lands
-    back on the break piece (that closing letter is part of the memo).
-    ``state`` is not modified.
+    Returns ``[(letters, group_kind), ...]`` in memo order, where ``group_kind`` is
+      * "buffer" - the cycle that contains the buffer (the memo starts here);
+      * "cycle"  - a cycle that was broken into, closed by landing back on its break piece;
+      * "flip"   - a piece that is solved in place but flipped (edge) or twisted (corner):
+                   its break letter is followed at once by a sticker of the same piece.
+
+    Static sticker tracing from the buffer: the target is the home letter of the sticker
+    in the traced buffer slot, then of the sticker in the previous target's slot, and so
+    on.  When the cycle returns to the buffer piece it is closed and the memo breaks into
+    the unsolved piece whose lowest sticker letter is alphabetically first; that cycle is
+    closed when the trace lands back on the break piece (that closing letter is part of the
+    memo).  ``state`` is not modified.
     """
     trace_letter = method.EDGE_TRACE_LETTER if kind == EDGE else method.CORNER_TRACE_LETTER
     buffer_piece = piece_of(kind, trace_letter)
     home = {l: home_letter(state, kind, l) for l in LETTERS}
 
-    memo = []
+    groups = []
     handled = set()                      # pieces already placed in the memo
 
+    first = []
     cur = trace_letter
     while True:                          # the cycle that contains the buffer
         target = home[cur]
         if target in buffer_piece:
             break
-        memo.append(target)
+        first.append(target)
         handled.add(piece_of(kind, target))
         cur = target
+    if first:
+        groups.append((tuple(first), "buffer"))
 
     while True:                          # cycles that do not contain the buffer
         start = next(
@@ -55,18 +63,24 @@ def trace_cycles(state, kind) -> Tuple[str, ...]:
             None,
         )
         if start is None:
-            return tuple(memo)
+            return groups
         break_piece = piece_of(kind, start)
         handled.add(break_piece)
-        memo.append(start)
+        letters = [start]
         cur = start
         while True:
             target = home[cur]
-            memo.append(target)
+            letters.append(target)
             handled.add(piece_of(kind, target))
             if target in break_piece:
                 break
             cur = target
+        groups.append((tuple(letters), "flip" if len(letters) == 2 and letters[1] in break_piece else "cycle"))
+
+
+def trace_cycles(state, kind) -> Tuple[str, ...]:
+    """Memo letters for ``kind`` (EDGE or CORNER), read from ``state`` (see ``trace_groups``)."""
+    return tuple(l for letters, _ in trace_groups(state, kind) for l in letters)
 
 
 def edge_execution_letters(memo):
@@ -91,6 +105,9 @@ class Solution:
     parity_number: Optional[int]
     parity_algorithm: Optional[str]
     corners: Tuple[Step, ...]
+    # Memo cycles as ((size, kind), ...) in memo order, kind as in ``trace_groups``.
+    edge_groups: Tuple[Tuple[int, str], ...] = ()
+    corner_groups: Tuple[Tuple[int, str], ...] = ()
 
     @property
     def edge_memo(self):
@@ -115,7 +132,8 @@ class Solution:
 
 def solve(scrambled_state, parity_number=DEFAULT_PARITY) -> Solution:
     """Generate the full blindfold solution for ``scrambled_state``."""
-    edge_memo = trace_cycles(scrambled_state, EDGE)
+    edge_traced = trace_groups(scrambled_state, EDGE)
+    edge_memo = tuple(l for letters, _ in edge_traced for l in letters)
     edge_exec = edge_execution_letters(edge_memo)
     edges = tuple(Step(m, e, method.EDGE_ALG[e]) for m, e in zip(edge_memo, edge_exec))
 
@@ -126,9 +144,12 @@ def solve(scrambled_state, parity_number=DEFAULT_PARITY) -> Solution:
         parity_alg = method.PARITY_ALGS[parity_number]
         working = apply_alg(working, parity_alg)
 
-    corner_memo = trace_cycles(working, CORNER)
+    corner_traced = trace_groups(working, CORNER)
+    corner_memo = tuple(l for letters, _ in corner_traced for l in letters)
     corners = tuple(Step(c, c, method.CORNER_ALG[c]) for c in corner_memo)
-    return Solution(edges, parity_number if parity_alg else None, parity_alg, corners)
+    return Solution(edges, parity_number if parity_alg else None, parity_alg, corners,
+                    tuple((len(letters), k) for letters, k in edge_traced),
+                    tuple((len(letters), k) for letters, k in corner_traced))
 
 
 def verify(scramble, solution) -> bool:

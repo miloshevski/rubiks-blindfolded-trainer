@@ -37,6 +37,9 @@ def build_payload(scramble=None, seed=None, parity=DEFAULT_PARITY):
         "absolute_letters": ABSOLUTE_LETTERS,
         "edge_memo": pair_up(solution.edge_memo),
         "corner_memo": pair_up(solution.corner_memo),
+        # Memo cycles in memo order: {"size": letters in the cycle, "kind": "buffer" | "cycle" | "flip"}.
+        "edge_cycles": [{"size": n, "kind": k} for n, k in solution.edge_groups],
+        "corner_cycles": [{"size": n, "kind": k} for n, k in solution.corner_groups],
         "solution": format_solution(solution),
         "verified": verify(scramble, solution),
         "frames": frames_for(state, solution.labelled_steps()),

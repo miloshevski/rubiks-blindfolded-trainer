@@ -16,11 +16,19 @@ export interface Frame extends CubeView {
   move: string;
 }
 
+/** One cycle of a memo: how many letters it spans, and what kind it is (a "flip" is a piece solved in place but flipped or twisted). */
+export interface MemoCycle {
+  size: number;
+  kind: 'buffer' | 'cycle' | 'flip';
+}
+
 export interface CubeData extends CubeView {
   scramble: string;
   absolute_letters: FaceStrings;
   edge_memo: string;
   corner_memo: string;
+  edge_cycles: MemoCycle[];
+  corner_cycles: MemoCycle[];
   solution: string;
   verified: boolean;
   frames: Frame[];

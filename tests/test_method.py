@@ -10,7 +10,7 @@ from bld import method
 from bld.cube import (CORNER, EDGE, LETTERS, OFFSET, apply_alg, invert_alg,
                       is_solved, piece_of, random_scramble, slot_index,
                       solved_state)
-from bld.solver import (edge_execution_letters, solve, trace_cycles, verify)
+from bld.solver import (edge_execution_letters, solve, trace_cycles, trace_groups, verify)
 
 SKILL = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "RUBIKS_SKILL.md")
@@ -25,6 +25,28 @@ def scrambled(s):
 
 def changed_letters(state, kind):
     return {l for l in LETTERS if state[slot_index(kind, l)] != slot_index(kind, l)}
+
+
+class MemoCycles(unittest.TestCase):
+    def test_groups_split_the_memo(self):
+        for scr in (SCRAMBLE_1, SCRAMBLE_2, "R U R' U' F2 D L2 B'"):
+            state = scrambled(scr)
+            for kind in (EDGE, CORNER):
+                groups = trace_groups(state, kind)
+                self.assertEqual("".join("".join(g) for g, _ in groups), "".join(trace_cycles(state, kind)))
+                self.assertTrue(all(k in ("buffer", "cycle", "flip") for _, k in groups))
+                self.assertEqual([k for _, k in groups].count("buffer") <= 1, True)
+
+    def test_flipped_edge_is_a_flip_group(self):
+        # "R U R' U' F2 D L2 B'" leaves the A/Q edge flipped in place.
+        groups = trace_groups(scrambled("R U R' U' F2 D L2 B'"), EDGE)
+        self.assertEqual(groups[-1], (("A", "Q"), "flip"))
+
+    def test_payload_cycles_cover_the_memo(self):
+        from bld.api import build_payload
+        p = build_payload(SCRAMBLE_1)
+        self.assertEqual(sum(c["size"] for c in p["edge_cycles"]), len(p["edge_memo"].replace(" ", "")))
+        self.assertEqual(sum(c["size"] for c in p["corner_cycles"]), len(p["corner_memo"].replace(" ", "")))
 
 
 class TutorialExamples(unittest.TestCase):
