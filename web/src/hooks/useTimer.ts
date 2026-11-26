@@ -87,6 +87,9 @@ export function useTimer() {
     if (phase === 'armed') { if (cube) start(); else setPhase('idle'); }
   }, [phase, cube, start]);
 
+  /** A held key or finger is cancelled (the browser took the touch): an armed timer stands down instead of starting. */
+  const disarm = useCallback(() => { if (phase === 'armed') setPhase('idle'); }, [phase]);
+
   /** A tap on the time: stops a running clock, starts an idle one at once (no holding), and from a finished solve moves on to the next. */
   const tap = useCallback(() => {
     if (phase === 'running') stop();
@@ -94,5 +97,5 @@ export function useTimer() {
     else if (phase === 'done') next();
   }, [phase, stop, start, next]);
 
-  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, keyDown, keyUp, tap, nextSolve: next, setPenalty, discard, nextScramble };
+  return { solves, phase, cube, error, display, last: phase === 'done' ? last : undefined, keyDown, keyUp, disarm, tap, nextSolve: next, setPenalty, discard, nextScramble };
 }
