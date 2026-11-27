@@ -71,7 +71,7 @@ export default function SolvePage() {
   // Space play/pause, ←/→ step a move, ⇧←/→ step a target, R random scramble.
   useGlobalKeys((e, t) => {
     if (document.querySelector('dialog[open]')) return;   // a dialog has the keyboard
-    if (e.key === ' ') { if (t?.closest('button')) return; e.preventDefault(); play(); }
+    if (e.key === ' ') { if (t?.closest('button, a')) return; e.preventDefault(); play(); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); if (e.shiftKey) playback.stepTarget(1); else playback.step(1); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); if (e.shiftKey) playback.stepTarget(-1); else playback.step(-1); }
     else if (e.key === 'r' || e.key === 'R') random();

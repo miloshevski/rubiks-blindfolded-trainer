@@ -3,12 +3,14 @@
 Build the app once with ``npm run build`` in web/; during development run ``npm run dev``
 there instead, which serves the app with hot reload and forwards /api here.
 """
+import gzip
 import json
 import mimetypes
 import os
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse, urlunparse
 
 from . import seo
 from .api import API, POST_API
@@ -16,6 +18,16 @@ from .api import API, POST_API
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(ROOT, "web", "dist")
 INDEX_FILE = os.path.realpath(os.path.join(DIST_DIR, "index.html"))
+
+NOT_FOUND = ("<!doctype html><html lang=en><head><meta charset=utf-8><title>Page not found | Blindfold Trainer</title>"
+             '<meta name=viewport content="width=device-width, initial-scale=1"><meta name=robots content=noindex>'
+             "<style>body{margin:0;background:#0c0d0e;color:#ece9e2;font:15px/1.6 system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}"
+             "a{color:#f2b33d}main{padding:24px;max-width:480px}</style></head><body><main><h1>Page not found</h1>"
+             '<p>There is nothing at this address. <a href="/">Go to the Blindfold Trainer home page</a>.</p></main></body></html>')
+
+# Text that is worth compressing; each compressed static file is kept until the file changes.
+COMPRESSIBLE = ("text/", "application/javascript", "application/json", "application/xml", "image/svg+xml")
+_gzipped = {}
 
 NOT_BUILT = (b"<!doctype html><meta charset=utf-8><title>Blindfold Trainer</title>"
              b"<p>The web app is not built yet: run <code>npm install && npm run build</code> in web/.")
@@ -37,9 +49,27 @@ def static_file(url_path):
 
 
 class Handler(BaseHTTPRequestHandler):
-    def _send(self, code, body, content_type, cache=None):
+    def _send(self, code, body, content_type, cache=None, stamp=None):
+        """Sends a response, gzipped when the client accepts it.  ``stamp`` (e.g. a file's mtime)
+        lets the compressed copy of a static file be kept until the file changes."""
         data = body if isinstance(body, bytes) else body.encode("utf-8")
+        compressible = len(data) > 1024 and content_type.startswith(COMPRESSIBLE)
+        encoded = False
+        if compressible and "gzip" in self.headers.get("Accept-Encoding", ""):
+            key = (self.path, stamp)
+            packed = _gzipped.get(key) if stamp is not None else None
+            if packed is None:
+                packed = gzip.compress(data, 6, mtime=0)
+                if stamp is not None:
+                    if len(_gzipped) > 64:
+                        _gzipped.clear()
+                    _gzipped[key] = packed
+            data, encoded = packed, True
         self.send_response(code)
+        if compressible:
+            self.send_header("Vary", "Accept-Encoding")
+        if encoded:
+            self.send_header("Content-Encoding", "gzip")
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
         if cache:
@@ -48,11 +78,36 @@ class Handler(BaseHTTPRequestHandler):
         if self.command != "HEAD":          # HEAD gets the same headers, no body
             self.wfile.write(data)
 
+    def _redirect(self, location):
+        self.send_response(301)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _redirect_target(self, url):
+        """Where a non-canonical address should go (one address per page: Google then indexes only that one), or None."""
+        host = self.headers.get("Host", "").split(":")[0].lower()
+        site = urlparse(seo.SITE_URL)
+        if site.hostname and host == "www." + site.hostname:
+            return urlunparse((site.scheme, site.netloc, url.path, "", url.query, ""))
+        path = url.path
+        if path == "/index.html":
+            path = "/"
+        elif len(path) > 1 and path.endswith("/") and "/" + path.strip("/") in seo.PAGES:
+            path = path.rstrip("/")
+        if path != url.path:
+            return urlunparse(("", "", path, "", url.query, ""))
+        return None
+
     def _send_json(self, code, obj):
         self._send(code, json.dumps(obj), "application/json")
 
     def do_GET(self):
         url = urlparse(self.path)
+        target = self._redirect_target(url)
+        if target:
+            self._redirect(target)
+            return
         endpoint = API.get(url.path)
         if endpoint is not None:
             query = parse_qs(url.query)
@@ -70,7 +125,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, seo.robots_txt(), "text/plain; charset=utf-8", "public, max-age=3600")
             return
         if url.path == "/sitemap.xml":
-            self._send(200, seo.sitemap_xml(), "application/xml; charset=utf-8", "public, max-age=3600")
+            self._send(200, seo.sitemap_xml(self._last_built()), "application/xml; charset=utf-8", "public, max-age=3600")
             return
         self._send_static(url.path)
 
@@ -99,7 +154,11 @@ class Handler(BaseHTTPRequestHandler):
             if not os.path.isfile(os.path.join(DIST_DIR, "index.html")):
                 self._send(503, NOT_BUILT, "text/html; charset=utf-8")
             else:
-                self._send(404, "not found", "text/plain")
+                # an unknown page gets a real 404 with a way home (and noindex); a missing file just a plain one
+                if "." in url_path.rsplit("/", 1)[-1]:
+                    self._send(404, "not found", "text/plain")
+                else:
+                    self._send(404, NOT_FOUND, "text/html; charset=utf-8", "no-cache")
             return
         if path == INDEX_FILE:
             # every app page is this file; crawlers and link previews need its head to be page-specific
@@ -112,7 +171,15 @@ class Handler(BaseHTTPRequestHandler):
         # Vite puts a content hash in every asset name, so those never change; the page must not be cached.
         cache = "public, max-age=31536000, immutable" if "/assets/" in path else "no-cache"
         with open(path, "rb") as f:
-            self._send(200, f.read(), content_type, cache)
+            self._send(200, f.read(), content_type, cache, stamp=os.path.getmtime(path))
+
+    @staticmethod
+    def _last_built():
+        """UTC date the web app was last built (a page's last change, for the sitemap), or None."""
+        try:
+            return time.strftime("%Y-%m-%d", time.gmtime(os.path.getmtime(INDEX_FILE)))
+        except OSError:
+            return None
 
     def log_message(self, *args):
         pass

@@ -29,8 +29,12 @@ export function App() {
   useEffect(canonicalizeUrl, []);
   useEffect(() => { document.title = PAGE_TITLE[mode]; }, [mode]);
   return (
-    <Suspense fallback={loading}>
-      <Page />
-    </Suspense>
+    <>
+      {/* every page needs one h1; Home and Tutorial show their own */}
+      {mode === 'home' || mode === 'tutorial' ? null : <h1 className="sr-only">{PAGE_TITLE[mode]}</h1>}
+      <Suspense fallback={loading}>
+        <Page />
+      </Suspense>
+    </>
   );
 }

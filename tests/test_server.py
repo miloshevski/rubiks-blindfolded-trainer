@@ -1,3 +1,5 @@
+import gzip
+import http.client
 import json
 import os
 import shutil
@@ -10,6 +12,8 @@ import urllib.request
 from http.server import ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from urllib.parse import urlparse
 
 from bld import pairs, seo, server
 
@@ -77,6 +81,19 @@ class Seo(unittest.TestCase):
         self.assertIn("<title>Tom &amp; &quot;Jerry&quot; &lt;b&gt;</title>", page)
         self.assertNotIn("</script><script>alert(1)", page)
         self.assertEqual(page.count("<script"), 2)       # the page's own script and the structured data
+
+    def test_sitemap_lastmod_and_verification(self):
+        self.assertIn("<lastmod>2026-11-27</lastmod>", seo.sitemap_xml("2026-11-27"))
+        self.assertNotIn("lastmod", seo.sitemap_xml())
+        saved = seo.GOOGLE_VERIFICATION
+        seo.GOOGLE_VERIFICATION = 'abc"def'
+        try:
+            home, other = seo.render_index(self.PAGE, "/"), seo.render_index(self.PAGE, "/solve")
+        finally:
+            seo.GOOGLE_VERIFICATION = saved
+        self.assertIn('<meta name="google-site-verification" content="abc&quot;def">', home)
+        self.assertNotIn("google-site-verification", other)
+        self.assertNotIn("google-site-verification", seo.render_index(self.PAGE, "/"))
 
     def test_robots_and_sitemap(self):
         self.assertIn(f"Sitemap: {seo.SITE_URL}/sitemap.xml", seo.robots_txt())
@@ -170,6 +187,46 @@ class Http(unittest.TestCase):
             self.assertIn(status, (200, 503), path)
             self.assertEqual(body, b"", path)
             self.assertTrue(length and int(length) > 0, path)
+
+    def raw(self, path, headers=None, method="GET"):
+        """A response without following redirects: (status, headers, body)."""
+        conn = http.client.HTTPConnection(*self.httpd.server_address)
+        try:
+            conn.request(method, path, headers=headers or {})
+            r = conn.getresponse()
+            return r.status, r, r.read()
+        finally:
+            conn.close()
+
+    def test_one_address_per_page(self):
+        site = urlparse(seo.SITE_URL)
+        status, r, _ = self.raw("/solve?s=90a", {"Host": "www." + site.hostname})
+        self.assertEqual((status, r.getheader("Location")), (301, f"{seo.SITE_URL}/solve?s=90a"))
+        status, r, _ = self.raw("/tutorial/")
+        self.assertEqual((status, r.getheader("Location")), (301, "/tutorial"))
+        status, r, _ = self.raw("/index.html")
+        self.assertEqual((status, r.getheader("Location")), (301, "/"))
+        self.assertEqual(self.raw("/")[0] in (200, 503), True)           # no redirect loop
+        self.assertEqual(self.raw("/tutorial", {"Host": site.hostname})[0] in (200, 503), True)
+
+    def test_unknown_page_is_a_real_404(self):
+        status, r, body = self.raw("/no-such-page")
+        if os.path.isfile(os.path.join(server.DIST_DIR, "index.html")):
+            self.assertEqual(status, 404)
+            self.assertIn(b"noindex", body)
+            self.assertIn(b'href="/"', body)
+        status, r, body = self.raw("/missing.js")
+        self.assertIn(status, (404, 503))
+
+    def test_text_is_gzipped_when_asked(self):
+        status, r, body = self.raw("/sitemap.xml", {"Accept-Encoding": "gzip"})
+        self.assertEqual(status, 200)
+        self.assertEqual(r.getheader("Vary"), None)               # small: not worth compressing
+        status, r, body = self.raw("/api/algs", {"Accept-Encoding": "gzip"})
+        self.assertEqual((r.getheader("Content-Encoding"), r.getheader("Vary")), ("gzip", "Accept-Encoding"))
+        self.assertEqual(len(json.loads(gzip.decompress(body))["edges"]), 24)
+        status, r, body = self.raw("/api/algs")                   # a client that does not ask gets plain JSON
+        self.assertEqual((r.getheader("Content-Encoding"), len(json.loads(body)["edges"])), (None, 24))
 
     def test_robots_and_sitemap_endpoints(self):
         status, headers, body = self.get("/robots.txt")

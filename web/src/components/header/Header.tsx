@@ -1,8 +1,9 @@
 import type { MouseEvent, ReactNode } from 'react';
-import { navigate, useMode } from '../../lib/route';
+import { cn } from '../../lib/cn';
+import { MODE_PATH, navigate, useMode } from '../../lib/route';
 import type { AppMode, ParityAlg } from '../../lib/types';
 import { BrandMark } from '../ui/icons';
-import { Segmented, type SegOption } from '../ui/Segmented';
+import { SEG_BUTTON_BASE, SEG_GROUP, type SegOption } from '../ui/Segmented';
 
 const MODES: readonly SegOption<AppMode>[] = [
   { value: 'tutorial', label: 'Learn', className: 'max-md:hidden' },   // phones reach it from the home page
@@ -34,16 +35,25 @@ interface Props {
 /** Command bar: the brand, the page switch, and whatever controls the current page adds. */
 export function Header({ children }: Props) {
   const mode = useMode();
-  const goHome = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const goTo = (e: MouseEvent<HTMLAnchorElement>, to: AppMode) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;   // new-tab clicks stay real links
     e.preventDefault();
-    navigate('home');
+    navigate(to);
   };
+  const goHome = (e: MouseEvent<HTMLAnchorElement>) => goTo(e, 'home');
   return (
     <header className="flex flex-none flex-wrap items-center gap-x-5 gap-y-2.5 border-b border-rule px-5 py-2.5 max-md:px-4 max-md:py-3">
       <a href="/" onClick={goHome} aria-label="Blindfold Trainer home"
          className="rounded text-inherit no-underline outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent">{brand}</a>
-      <Segmented options={MODES} value={mode} onChange={navigate} label="Mode" />
+      {/* Real links, so search engines can follow them; they look and act like the segmented control. */}
+      <nav className={SEG_GROUP} aria-label="Mode">
+        {MODES.map(o => (
+          <a key={o.value} href={MODE_PATH[o.value]} aria-current={o.value === mode ? 'page' : undefined} onClick={e => goTo(e, o.value)}
+             className={cn(SEG_BUTTON_BASE, 'inline-flex items-center justify-center px-2.5 no-underline hover:text-ink aria-[current=page]:bg-pressed aria-[current=page]:text-ink', o.className)}>
+            {o.label}
+          </a>
+        ))}
+      </nav>
       {children}
     </header>
   );

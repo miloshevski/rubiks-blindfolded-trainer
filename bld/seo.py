@@ -15,6 +15,9 @@ import json
 import os
 
 SITE_URL = os.environ.get("SITE_URL", "https://3bld.xyz").rstrip("/")
+# Google Search Console "HTML tag" verification: set this to the token it shows (the content="..." value).
+# The "HTML file" method needs no setting: put the file it gives you in web/public/.
+GOOGLE_VERIFICATION = os.environ.get("GOOGLE_SITE_VERIFICATION", "")
 NAME = "Blindfold Trainer"
 OG_IMAGE = "/og.png"                      # web/public/og.png, 1200x630
 OG_IMAGE_SIZE = (1200, 630)
@@ -98,7 +101,7 @@ def head_tags(route):
     title, description = PAGES[route]
     url, image = absolute(route), SITE_URL + OG_IMAGE
     q = html.escape
-    tags = [
+    tags = ([f'<meta name="google-site-verification" content="{q(GOOGLE_VERIFICATION)}">'] if GOOGLE_VERIFICATION and route == "/" else []) + [
         f"<title>{q(title)}</title>",
         f'<meta name="description" content="{q(description)}">',
         f'<link rel="canonical" href="{q(url)}">',
@@ -152,7 +155,9 @@ def robots_txt():
     return f"User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: {SITE_URL}/sitemap.xml\n"
 
 
-def sitemap_xml():
-    urls = "".join(f"  <url><loc>{html.escape(absolute(r))}</loc></url>\n" for r in SITEMAP_ROUTES)
+def sitemap_xml(lastmod=None):
+    """All pages; ``lastmod`` (YYYY-MM-DD) is when the app was last built."""
+    stamp = f"<lastmod>{lastmod}</lastmod>" if lastmod else ""
+    urls = "".join(f"  <url><loc>{html.escape(absolute(r))}</loc>{stamp}</url>\n" for r in SITEMAP_ROUTES)
     return ('<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}</urlset>\n')

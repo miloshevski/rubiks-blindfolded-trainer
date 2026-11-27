@@ -31,8 +31,8 @@ export default function TimerPage() {
     if (space) e.preventDefault();   // no page scroll, no button click on release
     if (e.repeat) return;
     if (t.phase !== 'running') {
-      if (IGNORED.test(e.key) || (e.key === 'Enter' && target?.closest('button, [role=button]'))) return;
-      if (target?.closest('button, [role=button]') && !space) return;
+      if (IGNORED.test(e.key) || (e.key === 'Enter' && target?.closest('button, a, [role=button]'))) return;
+      if (target?.closest('button, a, [role=button]') && !space) return;
     }
     if (space) (document.activeElement as HTMLElement | null)?.blur();
     t.keyDown();
