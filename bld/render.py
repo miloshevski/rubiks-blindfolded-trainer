@@ -37,6 +37,14 @@ def _grids(state, value):
     return {f: "".join("".join(r) for r in g) for f, g in grids.items()}
 
 
+def sticker_cell(slot):
+    """(face letter, cell 0-8 in that face's string) of a sticker slot's position."""
+    pos, normal = SLOTS[slot]
+    face = _FACE_OF_NORMAL[normal]
+    row, col = _CELL[face](*pos)
+    return face, row * 3 + col
+
+
 def facelets(state):
     """{face letter: 9-char color string} for ``state``."""
     return _grids(state, lambda home: _FACE_OF_NORMAL[SLOTS[home][1]])

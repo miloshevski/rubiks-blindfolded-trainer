@@ -6,9 +6,9 @@ from . import pairs
 from .constants import (CORNER_BUFFER_LETTERS, CORNER_NAMES, CORNER_SETUP, DEFAULT_PARITY,
                         EDGE_BUFFER_LETTERS, EDGE_NAMES, EDGE_SETUP, EDGE_SPECIAL,
                         EDGE_SWAP_MOVE, LETTERS, OPPOSITE, PARITY_ALGS, Y_PERM)
-from .cube import apply_alg, invert_alg, random_scramble, solved_state
+from .cube import CORNER, EDGE, apply_alg, invert_alg, random_scramble, slot_index, solved_state
 from .practice import check, normalize, user_steps
-from .render import ABSOLUTE_LETTERS, facelets, sticker_letters
+from .render import ABSOLUTE_LETTERS, facelets, sticker_cell, sticker_letters
 from .solver import format_solution, pair_up, solve, verify
 
 
@@ -105,6 +105,41 @@ def algs_payload():
     }
 
 
+def demo_payload(kind, letter):
+    """One target's algorithm played on a solved cube, for the tutorial's animation.
+
+    ``frames`` carry the phase of each move as their label ("setup", "swap", "undo"; a dedicated
+    algorithm is all "swap"), and ``marks`` say which stickers are the buffer and the target.
+    Raises ValueError for an unknown kind or letter, or for a buffer letter (it has no algorithm).
+    """
+    if kind not in ("edge", "corner"):
+        raise ValueError("kind must be edge or corner")
+    piece = EDGE if kind == "edge" else CORNER
+    rows = algs_payload()["edges" if kind == "edge" else "corners"]
+    row = next((r for r in rows if r["letter"] == letter), None)
+    if row is None:
+        raise ValueError(f"unknown {kind} letter {letter!r}")
+    if row.get("buffer"):
+        raise ValueError(f"{letter} is a buffer: it has no algorithm")
+    parts = [{"phase": phase, "alg": alg} for phase, alg in
+             (("setup", row["setup"]), ("swap", row["core"]), ("undo", row["undo"])) if alg]
+    buffers = EDGE_BUFFER_LETTERS if kind == "edge" else CORNER_BUFFER_LETTERS
+
+    def mark(role, one):
+        face, index = sticker_cell(slot_index(piece, one))
+        return {"face": face, "index": index, "role": role, "letter": one}
+
+    solved = solved_state()
+    return {
+        "kind": kind, "letter": letter, "sticker": row["sticker"], "parts": parts,
+        "buffers": list(buffers),
+        "marks": [mark("buffer", b) for b in buffers] + [mark("target", letter)],
+        "start": {"facelets": facelets(solved), "letters": ABSOLUTE_LETTERS},
+        "absolute_letters": ABSOLUTE_LETTERS,
+        "frames": frames_for(solved, [(p["phase"], p["alg"]) for p in parts]),
+    }
+
+
 def _api_cube(first):
     seed = first("seed")
     return build_payload(first("scramble", None), int(seed) if seed else None,
@@ -118,6 +153,7 @@ def _api_check(first):
 
 # Endpoint -> handler(first), where first(key, default="") reads one query parameter.
 API = {"/api/cube": _api_cube, "/api/check": _api_check, "/api/algs": lambda first: algs_payload(),
+       "/api/demo": lambda first: demo_payload(first("kind"), first("letter")),
        "/api/pairs": lambda first: pairs.load_pairs()}
 
 

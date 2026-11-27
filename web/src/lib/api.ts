@@ -1,4 +1,4 @@
-import type { AlgData, CheckResult, CubeData, ParityAlg } from './types';
+import type { AlgData, CheckResult, CubeData, DemoData, ParityAlg } from './types';
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -48,4 +48,9 @@ export async function savePairWord(pair: string, word: string): Promise<ApiResul
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/** A target's algorithm played on a solved cube, in phases (setup, swap, undo). */
+export function fetchDemo(kind: 'edge' | 'corner', letter: string) {
+  return getJson<DemoData>('/api/demo', { kind, letter });
 }

@@ -34,6 +34,21 @@ export interface CubeData extends CubeView {
   frames: Frame[];
 }
 
+/** One target's algorithm played on a solved cube (the tutorial's animation). */
+export interface DemoData {
+  kind: 'edge' | 'corner';
+  letter: string;
+  sticker: string;
+  parts: { phase: 'setup' | 'swap' | 'undo'; alg: string }[];
+  buffers: string[];
+  /** Where the buffer stickers and the target sticker are: face, cell 0-8 of that face. */
+  marks: { face: Face; index: number; role: 'buffer' | 'target'; letter: string }[];
+  start: CubeView;
+  absolute_letters: FaceStrings;
+  /** One per move; `label` is the phase the move belongs to. */
+  frames: Frame[];
+}
+
 export interface CheckResult {
   correct: boolean;
   edges_correct: boolean;

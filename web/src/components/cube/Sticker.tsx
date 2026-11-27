@@ -1,12 +1,14 @@
 import { memo } from 'react';
 import { cn } from '../../lib/cn';
 
-export type StickerMark = 'target' | 'ok' | 'bad';
+export type StickerMark = 'target' | 'ok' | 'bad' | 'buffer';
 
 // The blinking letter-drill target (on the cube and on its floating copy), then its verdict.
 const MARK_CLASS: Record<StickerMark, string> = {
   target: 'shadow-[inset_0_0_0_2px_#0c0d0e,inset_0_0_0_5px_var(--color-accent)] animate-blink motion-reduce:animate-none',
   ok: 'shadow-[inset_0_0_0_2px_#0c0d0e,inset_0_0_0_5px_var(--color-ok)]',
+  // the tutorial's buffer: a steady white ring (the target blinks)
+  buffer: 'shadow-[inset_0_0_0_2px_#0c0d0e,inset_0_0_0_5px_var(--color-ink)]',
   bad: 'shadow-[inset_0_0_0_2px_#0c0d0e,inset_0_0_0_5px_var(--color-bad)]',
 };
 

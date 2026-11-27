@@ -9,7 +9,7 @@ const AUTO_TURN = ['transition-transform', 'duration-500', 'ease-[cubic-bezier(.
  * The cube's view angle. It changes on every pointer move, so it lives in a ref and is written
  * straight to the DOM (cube transform + readout) instead of going through React state.
  */
-export function useViewRotation() {
+export function useViewRotation({ wheel: wheelTurns = true }: { wheel?: boolean } = {}) {
   const rot = useRef<Rotation>({ ...ROT0 });
   const cube = useRef<HTMLDivElement | null>(null);
   const readout = useRef<HTMLDivElement | null>(null);
@@ -62,7 +62,8 @@ export function useViewRotation() {
     stage.addEventListener('pointermove', move);
     stage.addEventListener('pointerup', end);
     stage.addEventListener('pointercancel', end);
-    stage.addEventListener('wheel', wheel, { passive: false });
+    // Inside a scrolling page (the tutorial) the wheel must keep scrolling it.
+    if (wheelTurns) stage.addEventListener('wheel', wheel, { passive: false });
     return () => {
       stage.removeEventListener('pointerdown', down);
       stage.removeEventListener('pointermove', move);
@@ -70,7 +71,7 @@ export function useViewRotation() {
       stage.removeEventListener('pointercancel', end);
       stage.removeEventListener('wheel', wheel);
     };
-  }, [apply, stopAutoTurn]);
+  }, [apply, stopAutoTurn, wheelTurns]);
 
   const reset = useCallback(() => { rot.current = { ...ROT0 }; apply(); }, [apply]);
 

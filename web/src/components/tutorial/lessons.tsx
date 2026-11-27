@@ -3,6 +3,7 @@ import type { TutorialData } from '../../hooks/useTutorialData';
 import { EXAMPLE_SCRAMBLE, FLIP_SCRAMBLE, solveHref } from '../../lib/tutorial';
 import { parseSolution } from '../../lib/solution';
 import { PageLink } from '../home/PageLink';
+import { AlgDemo } from './AlgDemo';
 import { AlgTable, Box, ExampleMemo, H, L, LetterNet, Loading, Note, OL, P, ParityTable, Try, UL } from './parts';
 
 export interface Lesson {
@@ -103,7 +104,16 @@ export const LESSONS: readonly Lesson[] = [
         </Box>
         <H>An edge example</H>
         <AlgTable rows={d.algs?.edges} letters={['B']} note="buffer" />
-        <P>That is the whole algorithm for edge <L>B</L>: the highlighted <L>M2</L> is the swap, the moves before it are the setup and the moves after it are the undo.</P>
+        <P>That is the whole algorithm for edge <L>B</L>: the highlighted <L>M2</L> is the swap, the moves before it are the setup and the moves after it are the undo. Now watch it work on a cube.</P>
+        <AlgDemo kind="edge" letter="B" />
+        <UL>
+          <li>The <b className="text-ink">white rings</b> are the buffer, the two stickers <L>K</L> and <L>U</L> of the Down-Front edge. The <b className="text-ink">blinking</b> sticker is the target, <L>B</L>.</li>
+          <li>Press <b className="text-ink">play</b>, or step through one move at a time. Click <b className="text-ink">Setup</b>, <b className="text-ink">Swap</b> or <b className="text-ink">Undo</b> to jump to the end of that part.</li>
+          <li>Set <b className="text-ink">Letters</b> to <i>Pieces</i> and follow them: the buffer's piece and the target's piece trade places. Drag the cube to look at it from other sides.</li>
+        </UL>
+        <Note title="Look closely at the end">
+          Besides the buffer and the target, <L>M2</L> swaps a second pair of edges as a side effect. The rest of the method (reading the memo in pairs, and the even-position rule in lesson 6) is built around it.
+        </Note>
       </>
     ),
   },
@@ -156,7 +166,9 @@ export const LESSONS: readonly Lesson[] = [
     id: 'edges', title: 'Execute edges with M2', summary: 'Setup, M2, undo, and one special rule',
     body: d => (
       <>
-        <P>Time to execute. For an ordinary edge target the algorithm is <b className="text-ink">setup, <L>M2</L>, undo</b>. Here are three of them, straight from the server's table:</P>
+        <P>Time to execute. For an ordinary edge target the algorithm is <b className="text-ink">setup, <L>M2</L>, undo</b>. Here is another one on the cube, edge <L>E</L>:</P>
+        <AlgDemo kind="edge" letter="E" finished="Done. Once more the buffer's piece and the target's piece have traded places, and a second pair of edges went with them." />
+        <P>And three of them, straight from the server's table:</P>
         <AlgTable rows={d.algs?.edges} letters={['A', 'B', 'E']} note="buffer" />
         <UL>
           <li><L>A</L> needs no setup: it is just <L>M2</L>.</li>
@@ -187,6 +199,8 @@ export const LESSONS: readonly Lesson[] = [
         <P>Corners work the same way, with a different swap. You trace the corner memo exactly like the edge memo, but from the <b className="text-ink">corner buffer</b> (letters <L>A</L>, <L>E</L>, <L>R</L>), using corner letters. The edge algorithms leave the corners alone. (The parity algorithm does move some corners; the Solve page takes that into account when it shows your corner memo.)</P>
         <P>The algorithm for a target is <b className="text-ink">setup, the altered Y-permutation, undo</b>:</P>
         <AlgTable rows={d.algs?.corners} letters={['V', 'B', 'G']} note="buffer" />
+        <P>Watch the corner algorithm for <L>B</L>. The ringed stickers are the three stickers of the corner buffer.</P>
+        <AlgDemo kind="corner" letter="B" />
         <UL>
           <li>The highlighted moves are the Y-permutation. It is the same for every corner.</li>
           <li><L>V</L> needs no setup, so it is the Y-permutation alone.</li>

@@ -27,12 +27,14 @@ interface Props {
   letterMode: LetterMode;
   absoluteLetters: FaceStrings | null;
   marks: DrillMarks | null;
+  /** More stickers to ring, by key (the tutorial marks the buffer and the target). */
+  tags?: ReadonlyMap<string, StickerMark> | null;
 }
 
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
 /** The 3D cube: 26 cubies (so single layers can turn) plus a floating copy of every face. */
-export function Cube3D({ ref, elementRef, view, letterMode, absoluteLetters, marks }: Props) {
+export function Cube3D({ ref, elementRef, view, letterMode, absoluteLetters, marks, tags }: Props) {
   const cubieEls = useRef(new Map<string, HTMLDivElement>());
   const turning = useRef(new Set<string>());    // cubies of turns still animating
   const turned = useRef(new Set<string>());     // cubies of finished turns, not yet at rest
@@ -97,7 +99,7 @@ export function Cube3D({ ref, elementRef, view, letterMode, absoluteLetters, mar
     return {
       color: stickerColor(view, face, i),
       letter: mark?.reveal ?? stickerLetter(view, letterMode, absoluteLetters, face, i),
-      mark: mark?.mark,
+      mark: mark?.mark ?? tags?.get(key),
     };
   };
 

@@ -141,3 +141,42 @@ class AlgorithmList(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Demo(unittest.TestCase):
+    def test_edge_demo_has_the_three_phases(self):
+        from bld.api import demo_payload
+        d = demo_payload("edge", "B")
+        self.assertEqual([p["phase"] for p in d["parts"]], ["setup", "swap", "undo"])
+        self.assertEqual(d["parts"][1]["alg"], "M2")
+        moves = " ".join(p["alg"] for p in d["parts"]).split()
+        self.assertEqual([f["move"] for f in d["frames"]], moves)
+        self.assertEqual([f["label"] for f in d["frames"]],
+                         ["setup"] * 4 + ["swap"] + ["undo"] * 4)
+        # the buffer's two stickers and the target
+        self.assertEqual([(m["role"], m["letter"]) for m in d["marks"]], [("buffer", "K"), ("buffer", "U"), ("target", "B")])
+
+    def test_corner_demo_uses_the_y_permutation(self):
+        from bld.api import demo_payload
+        d = demo_payload("corner", "V")             # V has no setup
+        self.assertEqual([p["phase"] for p in d["parts"]], ["swap"])
+        self.assertEqual(len(d["frames"]), 15)
+        self.assertEqual([m["letter"] for m in d["marks"]], ["A", "E", "R", "V"])
+
+    def test_the_demo_swaps_two_pairs_of_edges(self):
+        from bld.api import demo_payload
+        end = demo_payload("edge", "B")["frames"][-1]["letters"]
+        from bld.render import ABSOLUTE_LETTERS
+        changed = sum(a != b for f in end for a, b in zip(end[f], ABSOLUTE_LETTERS[f]))
+        # M2 swaps two pairs of edges at once: the buffer with the target, and a second pair as a side effect
+        self.assertEqual(changed, 8)                # four edges, two stickers each
+
+    def test_dedicated_algorithms_are_one_swap_phase(self):
+        from bld.api import demo_payload
+        self.assertEqual([p["phase"] for p in demo_payload("edge", "C")["parts"]], ["swap"])
+
+    def test_bad_requests(self):
+        from bld.api import demo_payload
+        for args in (("edge", "K"), ("edge", "Z"), ("corner", "A"), ("cube", "B"), ("", "")):
+            with self.assertRaises(ValueError, msg=args):
+                demo_payload(*args)
