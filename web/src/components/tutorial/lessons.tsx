@@ -14,6 +14,11 @@ export interface Lesson {
   body: (d: TutorialData) => ReactNode;
 }
 
+const TRACE_SCRAMBLE = "M U M U2 M' U M'";
+const CYCLES_SCRAMBLE = "M2 U M2 U2 M2 U M2";
+const FLIP_EDGES_SCRAMBLE = "M' U M' U M' U2 M U M U M U2";
+const TWIST_SCRAMBLE = "R' D' R D R' D' R D U2 D' R' D R D' R' D R U2";
+
 const link = 'text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent';
 
 /** The executed letters of the example's edge memo, with the substituted ones marked. */
@@ -129,6 +134,13 @@ export const LESSONS: readonly Lesson[] = [
           <li>Keep following. When the sticker you find belongs to the <b className="text-ink">buffer piece itself</b>, the cycle is closed. You do not write the buffer letter.</li>
         </OL>
         <P>Executing the targets in the order you wrote them, each swap sends the buffer's piece to the target and brings the target's piece into the buffer, ready for the next swap. Do all of them and the cycle is solved.</P>
+        <P>Here is a small scrambled cube with only three edges out of place. Its memo has two targets. Watch each swap send the buffer's piece away and bring the next piece in:</P>
+        <AlgDemo kind="edge" scramble={TRACE_SCRAMBLE} title="Follow the swaps"
+                 intro="Three edges are out of place, and the buffer's piece is one of them. The memo has two targets."
+                 step={(l, n) => n === 1
+                   ? `Target 1 is ${l}. The buffer's piece goes to ${l}, and the piece that was at ${l} lands in the buffer.`
+                   : `Target ${n} is ${l}. The piece now in the buffer goes to ${l}, and the next piece comes into the buffer.`}
+                 finished="Solved. Each target sent the piece in the buffer to its place, until the buffer held its own piece again: the cycle is closed." />
         <H>A real example</H>
         <P>This is the scramble the Solve page produces the memo of. The edge memo is the first row; the letters are grouped in pairs to make them easier to remember.</P>
         <ExampleMemo cube={d.example} />
@@ -152,10 +164,30 @@ export const LESSONS: readonly Lesson[] = [
           <li>Repeat until every piece is solved.</li>
         </OL>
         <P>Each cycle is a separate loop of pieces. On the Solve page every cycle is underlined in its own colour, so you can see where one ends and the next begins.</P>
+        <P>In this cube the buffer is already solved, so the first cycle is a break: the memo starts with <L>A</L>, a piece that is out of place. Watch the first cycle close on <L>A</L> again, then a second cycle begin:</P>
+        <AlgDemo kind="edge" scramble={CYCLES_SCRAMBLE} title="Two cycles"
+                 intro="Six edges are out of place, in two separate loops of three. The buffer's piece is already solved."
+                 step={(l, n) => n === 1 ? `Cycle 1 begins: break into it with A, a piece that is out of place.`
+                   : n === 2 ? `Trace on: the piece at A belongs at ${l}.`
+                     : n === 3 ? `It belongs back at ${l}, the piece you started the cycle with. Cycle 1 is closed, so you write ${l} too.`
+                       : n === 4 ? `Cycle 2 begins: break into it with ${l}.`
+                         : n === 5 ? `Trace on: the next piece belongs at ${l}.`
+                           : `Back at ${l}, where this cycle began. Cycle 2 is closed.`}
+                 finished="Solved. Two cycles, six targets: each loop was written down until it returned to the piece it started with." />
         <H>Flipped edges and twisted corners</H>
         <P>A piece can be in the right place but turned the wrong way: a <b className="text-ink">flipped edge</b>, or a <b className="text-ink">twisted corner</b>. It still needs fixing, and it is traced as a tiny cycle of two letters: write one sticker of the piece, then another sticker of the same piece.</P>
         <P>In this example the last edge pair and the last corner pair are exactly that. They are marked in yellow, and the memo summary names them.</P>
         <ExampleMemo cube={d.flips} />
+        <P>Here are two flipped edges on a cube. The pieces are in the right places, only turned the wrong way, so each swap trades a piece with its own other sticker:</P>
+        <AlgDemo kind="edge" scramble={FLIP_EDGES_SCRAMBLE} title="Flipped edges"
+                 intro="Two pairs of edges are flipped: every piece is in its own place, but turned the wrong way."
+                 step={(l, n) => n % 2 === 1 ? `Flip ${(n + 1) / 2}: write ${l}, one sticker of the flipped piece.` : `Then ${l}, its other sticker: that closes the pair. The piece is flipped back.`}
+                 finished="Solved. A flipped edge costs a two-letter cycle: one sticker, then the other." />
+        <P>A <b className="text-ink">twisted corner</b> is the same idea with three stickers, turned clockwise or anticlockwise in its own spot:</P>
+        <AlgDemo kind="corner" scramble={TWIST_SCRAMBLE} title="Twisted corner"
+                 intro="One pair of corners is twisted in place: each is in its own spot but turned."
+                 step={(l, n) => n === 1 ? `Write ${l}, one sticker of the twisted corner.` : `Then ${l}, another sticker of it: that closes the pair and untwists the corner.`}
+                 finished="Solved. A twisted corner is traced as a two-letter cycle, just like a flipped edge." />
         <Note title="Where to practise this">
           <a className={link} href={solveHref(FLIP_SCRAMBLE)}>Open this scramble on the Solve page</a>, find the yellow pairs, and look at their algorithms in the solution list.
         </Note>

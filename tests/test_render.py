@@ -144,6 +144,18 @@ if __name__ == "__main__":
 
 
 class Demo(unittest.TestCase):
+    def test_scramble_demo_solves_the_cube_target_by_target(self):
+        from bld.api import solve_demo_payload
+        d = solve_demo_payload("M2 U M2 U2 M2 U M2", "edges")
+        self.assertEqual(d["targets"], list("ACABDB"))
+        self.assertEqual([p["phase"] for p in d["parts"]], [f"Edges {l}" for l in "ACABDB"])
+        self.assertEqual(d["frames"][-1]["facelets"], facelets(solved_state()))
+        self.assertEqual(d["start"]["facelets"], facelets(apply_alg(solved_state(), "M2 U M2 U2 M2 U M2")))
+        with self.assertRaises(ValueError):
+            solve_demo_payload("", "edges")
+        with self.assertRaises(ValueError):
+            solve_demo_payload("R U", "wings")
+
     def test_edge_demo_has_the_three_phases(self):
         from bld.api import demo_payload
         d = demo_payload("edge", "B")

@@ -140,6 +140,44 @@ def demo_payload(kind, letter):
     }
 
 
+def solve_demo_payload(scramble, part):
+    """A scramble's edge or corner execution, target by target, for the tutorial's animation.
+
+    Same shape as ``demo_payload`` but every target is its own part (phase "Edges B", "Corners C"),
+    ``start`` is the scrambled cube and there are no marks.  Raises ValueError for bad input.
+    """
+    if part not in ("edges", "corners"):
+        raise ValueError("part must be edges or corners")
+    if not scramble or not scramble.strip():
+        raise ValueError("no scramble")
+    scramble = _clean(scramble)
+    state = apply_alg(solved_state(), scramble)
+    solution = solve(state)
+    prefix = "Edges " if part == "edges" else "Corners "
+    steps = [(label, alg) for label, alg in solution.labelled_steps() if label.startswith(prefix)]
+    if part == "corners":      # the edges (and parity) go first, so the corners start from that state
+        before = [alg for label, alg in solution.labelled_steps() if not label.startswith(prefix)]
+        for alg in before:
+            state = apply_alg(state, alg)
+    memo = solution.edge_memo if part == "edges" else solution.corner_memo
+    groups = solution.edge_groups if part == "edges" else solution.corner_groups
+    return {
+        "kind": part[:-1], "letter": "", "sticker": "", "scramble": scramble,
+        "parts": [{"phase": label, "alg": alg} for label, alg in steps],
+        "targets": list(memo), "groups": [{"size": n, "kind": k} for n, k in groups],
+        "buffers": [], "marks": [],
+        "start": {"facelets": facelets(state), "letters": sticker_letters(state)},
+        "absolute_letters": ABSOLUTE_LETTERS,
+        "frames": frames_for(state, steps),
+    }
+
+
+def _api_demo(first):
+    if first("scramble"):
+        return solve_demo_payload(first("scramble"), first("part", "edges"))
+    return demo_payload(first("kind"), first("letter"))
+
+
 def _api_cube(first):
     seed = first("seed")
     return build_payload(first("scramble", None), int(seed) if seed else None,
@@ -153,7 +191,7 @@ def _api_check(first):
 
 # Endpoint -> handler(first), where first(key, default="") reads one query parameter.
 API = {"/api/cube": _api_cube, "/api/check": _api_check, "/api/algs": lambda first: algs_payload(),
-       "/api/demo": lambda first: demo_payload(first("kind"), first("letter")),
+       "/api/demo": _api_demo,
        "/api/pairs": lambda first: pairs.load_pairs()}
 
 

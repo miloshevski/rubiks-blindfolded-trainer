@@ -54,3 +54,8 @@ export async function savePairWord(pair: string, word: string): Promise<ApiResul
 export function fetchDemo(kind: 'edge' | 'corner', letter: string) {
   return getJson<DemoData>('/api/demo', { kind, letter });
 }
+
+/** A scramble's edge or corner execution, target by target. */
+export function fetchSolveDemo(scramble: string, part: 'edges' | 'corners') {
+  return getJson<DemoData>('/api/demo', { scramble, part });
+}

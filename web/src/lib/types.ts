@@ -39,7 +39,11 @@ export interface DemoData {
   kind: 'edge' | 'corner';
   letter: string;
   sticker: string;
-  parts: { phase: 'setup' | 'swap' | 'undo'; alg: string }[];
+  /** `phase` is setup / swap / undo, or (a whole scramble's execution) "Edges B" etc. */
+  parts: { phase: string; alg: string }[];
+  /** Only for a scramble's execution: the memo letters and its cycles. */
+  targets?: string[];
+  groups?: { size: number; kind: string }[];
   buffers: string[];
   /** Where the buffer stickers and the target sticker are: face, cell 0-8 of that face. */
   marks: { face: Face; index: number; role: 'buffer' | 'target'; letter: string }[];
