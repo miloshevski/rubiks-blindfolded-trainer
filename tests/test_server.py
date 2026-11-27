@@ -11,7 +11,7 @@ from http.server import ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from bld import pairs, server
+from bld import pairs, seo, server
 
 
 class StaticFiles(unittest.TestCase):
@@ -27,6 +27,70 @@ class StaticFiles(unittest.TestCase):
 
     def test_missing_file(self):
         self.assertIsNone(server.static_file("/no-such-file.js"))
+
+
+class Seo(unittest.TestCase):
+    PAGE = ('<!doctype html><html><head><meta charset="utf-8"><title>Blindfold Trainer</title></head>'
+            '<body><div id="root"></div><script src="/x.js"></script></body></html>')
+
+    def test_every_route_has_a_page(self):
+        self.assertEqual({"/"} | set(server.APP_ROUTES), set(seo.PAGES))
+
+    def test_head_is_page_specific(self):
+        for route, (title, description) in seo.PAGES.items():
+            page = seo.render_index(self.PAGE, route)
+            self.assertEqual(page.count("<title>"), 1, route)
+            self.assertIn(f"<title>{title}</title>", page)
+            self.assertIn(f'<link rel="canonical" href="{seo.absolute(route)}">', page)
+            self.assertIn(f'<meta property="og:url" content="{seo.absolute(route)}">', page)
+            self.assertIn(f'<meta name="description" content="{description}">', page)
+            self.assertLessEqual(len(title), 62, route)
+            self.assertLessEqual(len(description), 170, route)
+
+    def test_social_preview_tags(self):
+        page = seo.render_index(self.PAGE, "/solve")
+        for tag in ('property="og:image" content="https://', 'property="og:image:width" content="1200"',
+                    'property="og:image:height" content="630"', 'name="twitter:card" content="summary_large_image"',
+                    'name="twitter:image" content="https://', 'property="og:image:alt"'):
+            self.assertIn(tag, page)
+        self.assertTrue(seo.SITE_URL.startswith("https://"))
+
+    def test_structured_data_is_valid_json(self):
+        for route in seo.PAGES:
+            page = seo.render_index(self.PAGE, route)
+            blob = page.split('<script type="application/ld+json">')[1].split("</script>")[0]
+            self.assertEqual(json.loads(blob)["@context"], "https://schema.org")
+
+    def test_unknown_path_falls_back_to_home_and_body_gets_a_fallback(self):
+        page = seo.render_index(self.PAGE, "/index.html")
+        self.assertIn(f'href="{seo.SITE_URL}/"', page)
+        self.assertIn("<noscript>", page)
+        self.assertLess(page.index('<div id="root"></div>'), page.index("<noscript>"))
+
+    def test_text_is_escaped(self):
+        saved = seo.PAGES["/"]
+        seo.PAGES["/"] = ('Tom & "Jerry" <b>', 'say "hi" </script><script>alert(1)')
+        try:
+            page = seo.render_index(self.PAGE, "/")
+        finally:
+            seo.PAGES["/"] = saved
+        self.assertIn("<title>Tom &amp; &quot;Jerry&quot; &lt;b&gt;</title>", page)
+        self.assertNotIn("</script><script>alert(1)", page)
+        self.assertEqual(page.count("<script"), 2)       # the page's own script and the structured data
+
+    def test_robots_and_sitemap(self):
+        self.assertIn(f"Sitemap: {seo.SITE_URL}/sitemap.xml", seo.robots_txt())
+        self.assertIn("Disallow: /api/", seo.robots_txt())
+        xml = seo.sitemap_xml()
+        for route in seo.PAGES:
+            self.assertIn(f"<loc>{seo.absolute(route)}</loc>", xml)
+
+    def test_the_preview_image_exists(self):
+        path = os.path.join(server.ROOT, "web", "public", "og.png")
+        with open(path, "rb") as f:
+            head = f.read(24)
+        self.assertEqual(head[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertEqual((int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")), seo.OG_IMAGE_SIZE)
 
 
 class Http(unittest.TestCase):
@@ -93,6 +157,27 @@ class Http(unittest.TestCase):
         finally:
             pairs.PAIRS_FILE = original
             shutil.rmtree(tmp)
+
+    def test_head_requests(self):
+        for path in ("/", "/tutorial", "/api/algs", "/robots.txt"):
+            req = urllib.request.Request(self.base + path, method="HEAD")
+            try:
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    status, body, length = r.status, r.read(), r.headers["Content-Length"]
+            except urllib.error.HTTPError as e:     # an unbuilt app answers 503, still without a body
+                with e:
+                    status, body, length = e.code, e.read(), e.headers["Content-Length"]
+            self.assertIn(status, (200, 503), path)
+            self.assertEqual(body, b"", path)
+            self.assertTrue(length and int(length) > 0, path)
+
+    def test_robots_and_sitemap_endpoints(self):
+        status, headers, body = self.get("/robots.txt")
+        self.assertEqual((status, headers["Content-Type"].split(";")[0]), (200, "text/plain"))
+        self.assertIn(b"Sitemap:", body)
+        status, headers, body = self.get("/sitemap.xml")
+        self.assertEqual((status, headers["Content-Type"].split(";")[0]), (200, "application/xml"))
+        self.assertIn(b"<urlset", body)
 
     def test_page(self):
         status, headers, _ = self.get("/")

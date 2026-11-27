@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { Header } from './components/header/Header';
-import { canonicalizeUrl, useMode } from './lib/route';
+import { canonicalizeUrl, PAGE_TITLE, useMode } from './lib/route';
 import type { AppMode } from './lib/types';
 
 // Each page is its own chunk, loaded the first time it is visited (the Pairs dictionary alone
@@ -24,8 +24,10 @@ const loading = (
 );
 
 export function App() {
-  const Page = PAGES[useMode()];
+  const mode = useMode();
+  const Page = PAGES[mode];
   useEffect(canonicalizeUrl, []);
+  useEffect(() => { document.title = PAGE_TITLE[mode]; }, [mode]);
   return (
     <Suspense fallback={loading}>
       <Page />

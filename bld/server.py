@@ -10,10 +10,12 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
+from . import seo
 from .api import API, POST_API
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(ROOT, "web", "dist")
+INDEX_FILE = os.path.realpath(os.path.join(DIST_DIR, "index.html"))
 
 NOT_BUILT = (b"<!doctype html><meta charset=utf-8><title>Blindfold Trainer</title>"
              b"<p>The web app is not built yet: run <code>npm install && npm run build</code> in web/.")
@@ -43,7 +45,8 @@ class Handler(BaseHTTPRequestHandler):
         if cache:
             self.send_header("Cache-Control", cache)
         self.end_headers()
-        self.wfile.write(data)
+        if self.command != "HEAD":          # HEAD gets the same headers, no body
+            self.wfile.write(data)
 
     def _send_json(self, code, obj):
         self._send(code, json.dumps(obj), "application/json")
@@ -62,6 +65,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         if url.path.startswith("/api/"):
             self._send_json(404, {"error": "unknown endpoint"})
+            return
+        if url.path == "/robots.txt":
+            self._send(200, seo.robots_txt(), "text/plain; charset=utf-8", "public, max-age=3600")
+            return
+        if url.path == "/sitemap.xml":
+            self._send(200, seo.sitemap_xml(), "application/xml; charset=utf-8", "public, max-age=3600")
             return
         self._send_static(url.path)
 
@@ -82,6 +91,8 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, KeyError) as e:     # JSONDecodeError is a ValueError
             self._send_json(400, {"error": str(e)})
 
+    do_HEAD = do_GET    # link-preview and search crawlers often check with HEAD first
+
     def _send_static(self, url_path):
         path = static_file(url_path)
         if path is None:
@@ -89,6 +100,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(503, NOT_BUILT, "text/html; charset=utf-8")
             else:
                 self._send(404, "not found", "text/plain")
+            return
+        if path == INDEX_FILE:
+            # every app page is this file; crawlers and link previews need its head to be page-specific
+            with open(path, encoding="utf-8") as f:
+                self._send(200, seo.render_index(f.read(), url_path), "text/html; charset=utf-8", "no-cache")
             return
         content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
         if content_type.startswith("text/") or content_type in ("application/javascript", "image/svg+xml"):

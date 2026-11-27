@@ -12,6 +12,17 @@ export const MODE_PATH: Record<AppMode, string> = {
   timer: '/timer',
 };
 
+/** Tab titles (the server sends the same ones in the HTML for crawlers: bld/seo.py). */
+export const PAGE_TITLE: Record<AppMode, string> = {
+  home: 'Blindfold Trainer: learn to solve the 3x3 blindfolded',
+  tutorial: 'Blindfold tutorial: M2 and Old Pochmann in 10 lessons',
+  solve: 'Blindfold solve trainer: memo, solution and 3D replay',
+  drill: 'Speffz letter drill for blindfold cubing',
+  algs: 'M2 and Old Pochmann algorithm list',
+  pairs: 'Blindfold letter pairs: a 576-word dictionary',
+  timer: 'Blindfold cube timer with averages',
+};
+
 const MODES = Object.keys(MODE_PATH) as AppMode[];
 
 /** "/" is the home page; unknown paths go there too. */
