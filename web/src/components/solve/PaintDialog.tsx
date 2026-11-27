@@ -22,6 +22,21 @@ const METHODS: readonly SegOption<Method>[] = [
   { value: 'palette', label: 'Pick a colour', title: 'Pick a colour, then tap or drag over the stickers' },
   { value: 'chooser', label: 'Tap a sticker', title: 'Tap a sticker, then choose its colour from a list of six' },
 ];
+const FACE_LABEL: Record<Face, string> = { U: 'Up', L: 'Left', F: 'Front', R: 'Right', B: 'Back', D: 'Down' };
+const MINI_ORDER = NET_FACES;      // the order the phone steps through the faces
+
+/** True on a phone-sized screen, where the cube is painted one face at a time. */
+function usePhone() {
+  const query = '(max-width: 767px)';
+  const [phone, setPhone] = useState(() => matchMedia(query).matches);
+  useEffect(() => {
+    const list = matchMedia(query);
+    const change = () => setPhone(list.matches);
+    list.addEventListener('change', change);
+    return () => list.removeEventListener('change', change);
+  }, []);
+  return phone;
+}
 const PICKER = { w: 3 * 52 + 2 * 8 + 20, h: 2 * 52 + 8 + 20 };   // the colour chooser's size in px, for placing it
 
 interface Props {
@@ -40,6 +55,8 @@ export function PaintDialog({ start, onSolve, onClose }: Props) {
   const [method, setMethod] = useStoredState<Method>('bld.paint2', 'palette', oneOf<Method>('chooser', 'palette'));
   const [colour, setColour] = useState<Face>('U');          // palette method: the colour being painted with
   const painting = useRef(false);
+  const phone = usePhone();
+  const [focus, setFocus] = useState<Face>('U');     // phone: the face being painted
   const [open, setOpen] = useState<{ face: Face; i: number } | null>(null);   // the sticker being painted
   const [spot, setSpot] = useState({ left: 0, top: 0 });
   const [problem, setProblem] = useState('');
@@ -64,12 +81,14 @@ export function PaintDialog({ start, onSolve, onClose }: Props) {
 
   const choose = (face: Face) => {
     if (!open) return;
+    justPainted.current = !grid[open.face].every(Boolean);    // finishing a face moves on (phone)
     setProblem('');
     setGrid(g => ({ ...g, [open.face]: g[open.face].map((c, k) => (k === open.i ? face : c)) }));
     setOpen(null);
   };
   const paint = (face: Face, i: number) => {
     if (i === 4) return;                      // centres never move
+    justPainted.current = !grid[face].every(Boolean);
     setProblem('');
     setGrid(g => (g[face][i] === colour ? g : { ...g, [face]: g[face].map((c, k) => (k === i ? colour : c)) }));
   };
@@ -101,6 +120,17 @@ export function PaintDialog({ start, onSolve, onClose }: Props) {
     else if (open) { e.preventDefault(); choose(PALETTE[n - 1].face); }
   };
 
+  // Phone: once the face being painted is complete, move on to the next one.
+  const justPainted = useRef(false);
+  const complete = grid[focus].every(Boolean);
+  useEffect(() => {
+    if (!phone || !justPainted.current || !complete) return;
+    justPainted.current = false;
+    const t = setTimeout(() => setFocus(f => MINI_ORDER[(MINI_ORDER.indexOf(f) + 1) % 6]), 350);
+    return () => clearTimeout(t);
+  }, [phone, complete, grid]);
+  const step = (d: 1 | -1) => { justPainted.current = false; setOpen(null); setFocus(f => MINI_ORDER[(MINI_ORDER.indexOf(f) + d + 6) % 6]); };
+
   const solve = async () => {
     if (!scramble || busy) return;
     setBusy(true);
@@ -114,12 +144,92 @@ export function PaintDialog({ start, onSolve, onClose }: Props) {
     <dialog ref={dialog} aria-label="Paint a cube" onClose={onClose} onKeyDown={keyDown}
             onCancel={e => { if (open) { e.preventDefault(); setOpen(null); } }}
             onClick={e => { if (e.target === e.currentTarget) close(); }}
-            className="m-auto flex max-h-[96vh] w-[min(920px,97vw)] flex-col overflow-hidden rounded-md border border-line bg-bg p-0 text-ink backdrop:bg-black/75">
+            className="m-auto flex h-dvh max-h-none w-screen max-w-none flex-col overflow-hidden border-0 border-line bg-bg p-0 text-ink backdrop:bg-black/75 md:h-auto md:max-h-[96vh] md:w-[min(920px,97vw)] md:rounded-md md:border">
       <div className="flex flex-none items-center justify-between border-b border-rule px-5 py-3.5 max-md:px-4">
         <h2 className="m-0 text-[15px] font-semibold">Paint your cube</h2>
         <Meta className="text-[12px]">{missing ? `${missing} stickers left` : 'all painted'}</Meta>
       </div>
 
+      {phone ? (
+      <div className="flex min-h-0 flex-[1_1_auto] flex-col items-center justify-evenly gap-2 overflow-hidden px-3 py-3" onClick={() => setOpen(null)}>
+        <div onClick={e => e.stopPropagation()}>
+          <Segmented options={METHODS} value={method} onChange={m => { setMethod(m); setOpen(null); }} label="How to paint" />
+        </div>
+
+        <div className="grid gap-[3px] [--m:11px] [grid-template-columns:repeat(4,calc(var(--m)*3+4px))] [grid-template-rows:repeat(3,calc(var(--m)*3+4px))]" role="group" aria-label="Choose a face to paint" onClick={e => e.stopPropagation()}>
+          {NET_FACES.map(face => (
+            <button key={face} type="button" data-mini={face} aria-label={`${FACE_LABEL[face]} face`} aria-pressed={focus === face}
+                    onClick={() => { setOpen(null); setFocus(face); }}
+                    className={cn('grid cursor-pointer gap-px rounded-[3px] border-0 bg-transparent p-px [grid-template-columns:repeat(3,var(--m))] [grid-template-rows:repeat(3,var(--m))]',
+                      focus === face ? 'shadow-[0_0_0_2px_var(--color-accent)]' : 'opacity-70')}
+                    style={{ gridArea: NET_AREA[face] }}>
+              {grid[face].map((c, i) => (
+                <i key={i} className={cn('block rounded-[1px]', !c && 'border border-dashed border-line-2 bg-sunk')} style={c ? { background: FACE_COLOR[c] } : undefined} />
+              ))}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex w-full max-w-[340px] items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
+          <Button size="sm" onClick={() => step(-1)} aria-label="Previous face">← {FACE_LABEL[MINI_ORDER[(MINI_ORDER.indexOf(focus) + 5) % 6]]}</Button>
+          <span className="text-center text-[13px] font-semibold">{FACE_LABEL[focus]} <span className="font-normal text-ink-3">· {NAME[focus]} centre</span></span>
+          <Button size="sm" onClick={() => step(1)} aria-label="Next face">{FACE_LABEL[MINI_ORDER[(MINI_ORDER.indexOf(focus) + 1) % 6]]} →</Button>
+        </div>
+
+        <div ref={net} className="relative" onClick={e => e.stopPropagation()}>
+          <div className={cn('grid gap-1.5 [--b:min(92px,calc((100dvh_-_510px)/3),calc((100vw_-_72px)/3))] [grid-template-columns:repeat(3,var(--b))] [grid-template-rows:repeat(3,var(--b))]', method === 'palette' && 'touch-none')}
+               onPointerDown={pressed} onPointerMove={dragged} onPointerUp={released} onPointerCancel={released} onPointerLeave={released}
+               aria-label={`${FACE_LABEL[focus]} face`}>
+            {grid[focus].map((c, i) => {
+              const here = open?.face === focus && open.i === i;
+              return (
+                <button key={i} type="button" data-face={focus} data-cell={i} disabled={i === 4} tabIndex={i === 4 ? -1 : 0}
+                        aria-label={`${FACE_LABEL[focus]} sticker ${i + 1}: ${c ? NAME[c] : 'not painted'}`}
+                        onClick={() => stickerClick(focus, i, here)}
+                        className={cn('block rounded-[6px] border p-0 enabled:cursor-pointer', c ? 'border-black/40' : 'border-dashed border-line-2 bg-sunk',
+                          here && method === 'chooser' && 'shadow-[0_0_0_2px_var(--color-bg),0_0_0_4px_var(--color-accent)]')}
+                        style={c ? { background: FACE_COLOR[c] } : undefined} />
+              );
+            })}
+          </div>
+          {open && method === 'chooser' ? (
+            <div role="menu" aria-label="Colour of this sticker"
+                 className="absolute z-10 grid [grid-template-columns:repeat(3,52px)] gap-2 rounded-md border border-edge-2 bg-raise p-2.5 shadow-[0_8px_28px_rgba(0,0,0,.6)]"
+                 style={{ left: spot.left, top: spot.top }}>
+              {PALETTE.map(({ face, name }, n) => (
+                <button key={face} type="button" role="menuitem" aria-label={`${name} (${n + 1})`} onClick={() => choose(face)}
+                        className="h-[52px] cursor-pointer rounded border border-black/40 p-0" style={{ background: FACE_COLOR[face] }} />
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div onClick={e => e.stopPropagation()} className="w-full">
+          {method === 'palette' ? (
+            <div className="flex justify-center gap-1.5" role="radiogroup" aria-label="Colour to paint with">
+              {PALETTE.map(({ face, name }, n) => (
+                <button key={face} type="button" role="radio" aria-checked={colour === face} aria-label={`${name} (${n + 1})`}
+                        onClick={() => setColour(face)}
+                        className={cn('flex w-[50px] cursor-pointer flex-col items-center gap-1 rounded border bg-transparent p-1 text-ink',
+                          colour === face ? 'border-accent bg-accent-bg' : 'border-line')}>
+                  <span className="block h-8 w-full rounded-[3px] border border-black/40" style={{ background: FACE_COLOR[face] }} />
+                  <span className={cn('font-mono text-[10.5px] leading-[normal]', counts[face] > 9 ? 'text-bad' : counts[face] === 9 ? 'text-ok' : 'text-ink-3')}>{counts[face]}/9</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 font-mono text-[11.5px] text-ink-3" aria-label="Stickers painted per colour">
+              {PALETTE.map(({ face, name }) => (
+                <span key={face} className={cn('inline-flex items-center gap-1.5', counts[face] > 9 && 'text-bad', counts[face] === 9 && 'text-ok')}>
+                  <span className="size-3 rounded-[2px] border border-black/40" style={{ background: FACE_COLOR[face] }} />{name} {counts[face]}/9
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <p role="alert" className="m-0 min-h-[2.4em] text-center font-mono text-[11.5px] leading-[1.45] text-bad">{problem}</p>
+      </div>
+      ) : (
       <div className="flex min-h-0 flex-[1_1_auto] flex-col items-center justify-center gap-4 overflow-hidden px-5 py-4 max-md:px-3 md:flex-row md:gap-8" onClick={() => setOpen(null)}>
         <div className="flex w-full flex-col items-center gap-3 md:order-last md:w-[230px] md:flex-none md:items-stretch" onClick={e => e.stopPropagation()}>
           <p className="m-0 text-center text-[13px] leading-[1.55] text-ink-3 md:text-left">
@@ -190,14 +300,15 @@ export function PaintDialog({ start, onSolve, onClose }: Props) {
           ) : null}
         </div>
       </div>
+      )}
 
-      <div className="flex flex-none flex-wrap items-center justify-between gap-2 border-t border-rule px-5 py-3.5 max-md:px-4">
-        <div className="flex gap-2">
+      <div className="flex flex-none flex-wrap items-center justify-between gap-2 border-t border-rule px-5 py-3.5 max-md:flex-col max-md:items-stretch max-md:px-3">
+        <div className="flex gap-2 max-md:[&>button]:flex-1">
           <Button size="sm" onClick={() => fill(blankGrid())}>Clear</Button>
           <Button size="sm" onClick={() => fill(solvedGrid())}>Solved</Button>
           <Button size="sm" disabled={!start} onClick={() => start && fill(gridFromFacelets(start.facelets))}>Current cube</Button>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 max-md:[&>button]:h-11 max-md:[&>button]:flex-1">
           <Button onClick={close}>Cancel</Button>
           <Button variant="primary" disabled={!scramble || busy} onClick={solve}>{busy ? 'Solving…' : 'Solve it'}</Button>
         </div>
