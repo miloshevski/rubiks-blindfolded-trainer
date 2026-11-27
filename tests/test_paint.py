@@ -65,5 +65,12 @@ class Paint(unittest.TestCase):
             build_payload(painted(g), None, 1)
 
 
+class Limits(unittest.TestCase):
+    def test_an_absurdly_long_scramble_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "too long"):
+            build_payload("R U " * 200, None, 1)
+        self.assertTrue(build_payload("R U " * 100, None, 1)["verified"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -18,9 +18,15 @@ def _check_parity(parity):
         raise ValueError(f"parity must be one of {sorted(PARITY_ALGS)}")
 
 
+MAX_SCRAMBLE_MOVES = 300     # a real scramble has about 20; this only keeps a bot from sending a huge one
+
+
 def _clean(scramble):
-    """Scramble with runs of whitespace collapsed to single spaces."""
-    return " ".join(scramble.split())
+    """Scramble with runs of whitespace collapsed to single spaces; ValueError if it is absurdly long."""
+    moves = scramble.split()
+    if len(moves) > MAX_SCRAMBLE_MOVES:
+        raise ValueError(f"the scramble is too long ({MAX_SCRAMBLE_MOVES} moves at most)")
+    return " ".join(moves)
 
 
 UNREACHABLE = ("this cube cannot be solved: a single edge is flipped, a single corner is twisted, "
