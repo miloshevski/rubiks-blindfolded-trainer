@@ -1,3 +1,4 @@
+import { scrambleLabel } from '../../lib/paint';
 import { useState } from 'react';
 import { parseSolution } from '../../lib/solution';
 import type { CubeData } from '../../lib/types';
@@ -29,7 +30,7 @@ export function ScramblePanel({ cube, error, canRescramble, onRescramble, saved,
       {error ? <p role="alert" className="m-0 text-[12.5px] text-bad">{error}</p> : (
         <p className="m-0 max-w-[1000px] font-mono text-[26px] leading-normal font-medium tracking-[.02em] [overflow-wrap:anywhere] [word-spacing:.35em] max-md:text-[clamp(15px,4.6vw,20px)] max-md:leading-[1.55] max-md:[word-spacing:.15em] max-md:[@media(max-height:700px)]:text-[clamp(14px,4.2vw,18px)]"
            aria-live="polite">
-          {cube ? cube.scramble : <span className="text-ink-3">Loading…</span>}
+          {cube ? scrambleLabel(cube.scramble) : <span className="text-ink-3">Loading…</span>}
         </p>
       )}
       <div className="flex gap-1.5">

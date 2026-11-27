@@ -40,16 +40,17 @@ export function useCube(onLoaded: () => void) {
   loaded.current = onLoaded;
 
   /** Loads `text` (empty: a random scramble) and tells the page once it has arrived. */
-  const load = useCallback(async (text: string, parityAlg: ParityAlg) => {
+  const load = useCallback(async (text: string, parityAlg: ParityAlg): Promise<string> => {
     setError('');
     const res = await fetchCube(text, parityAlg);
-    if (!res.ok) { setError(res.error); return; }
+    if (!res.ok) { setError(res.error); return res.error; }
     remembered.scramble = res.data.scramble;
     remembered.parity = parityAlg;
     try { sessionStorage.setItem(STORE, JSON.stringify(remembered)); } catch { /* storage unavailable */ }
     setCurrent(res.data);
     setScramble(res.data.scramble);
     loaded.current();
+    return '';
   }, []);
 
   // First scramble, once per mount (StrictMode runs effects twice in development).
@@ -64,7 +65,14 @@ export function useCube(onLoaded: () => void) {
   /** Opens a given scramble (a saved favorite): shows it in the box and loads it. */
   const open = (text: string) => { setScramble(text); setUrlScramble(text); load(text, parity); };
   const apply = () => { const text = scramble.trim(); setUrlScramble(text); load(text, parity); };
+  /** Solves a painted cube ("~…"); answers the reason when it is not a cube that can be solved, '' when loaded. */
+  const paint = async (text: string) => {
+    const problem = await load(text, parity);
+    if (problem) setError('');       // the dialog shows it
+    else { setScramble(text); setUrlScramble(text); }
+    return problem;
+  };
   const changeParity = (p: ParityAlg) => { setParity(p); if (current) load(current.scramble, p); };
 
-  return { current, scramble, setScramble, error, parity, changeParity, random, apply, open };
+  return { current, scramble, setScramble, error, parity, changeParity, random, apply, open, paint };
 }

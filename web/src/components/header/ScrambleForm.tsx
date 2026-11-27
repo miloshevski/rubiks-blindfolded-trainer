@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Button, Kbd } from '../ui/Button';
+import { isPainted, scrambleLabel } from '../../lib/paint';
 import { shareUrl } from '../../lib/scrambleCode';
 import { iconStar } from '../ui/icons';
 import { IconButton } from '../ui/IconButton';
@@ -19,11 +20,12 @@ interface Props {
   favoriteCount: number;
   onToggleSaved: () => void;
   onOpenFavorites: () => void;
+  onPaint: () => void;
 }
 
 /** Scramble box (wraps and grows on phones and touch screens, one scrolling line on desktop) + Random / Apply.
  *  On touch screens from tablet width up it takes its own full-width row. */
-export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onRandom, loaded, saved, favoriteCount, onToggleSaved, onOpenFavorites }: Props) {
+export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onRandom, loaded, saved, favoriteCount, onToggleSaved, onOpenFavorites, onPaint }: Props) {
   const box = useRef<HTMLTextAreaElement>(null);
   const [shareLabel, setShareLabel] = useState('Share');
   const link = loaded ? shareUrl(loaded) : null;
@@ -58,8 +60,8 @@ export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onR
     <form className="m-0 flex min-w-0 flex-[1_1_520px] items-center gap-2 max-md:flex-wrap touch:order-last touch:basis-full" onSubmit={submit}>
       <label htmlFor="scramble" className="font-mono text-[11px] leading-[normal] text-ink-3 max-md:hidden">Scramble</label>
       <div className="relative min-w-0 flex-[1_1_auto] max-md:flex-[1_0_100%]">
-        <textarea ref={box} id="scramble" rows={1} value={value} onChange={e => onChange(e.target.value)} onKeyDown={keyDown}
-                  placeholder="Paste a scramble, or leave empty for a random one" autoComplete="off" spellCheck={false}
+        <textarea ref={box} id="scramble" rows={1} value={isPainted(value) ? scrambleLabel(value) : value} onFocus={() => { if (isPainted(value)) onChange(''); }} onChange={e => onChange(e.target.value)} onKeyDown={keyDown}
+                  placeholder="Paste a scramble, paint a cube, or leave empty for a random one" autoComplete="off" spellCheck={false}
                   aria-describedby="msg" aria-invalid={invalid || undefined}
                   className={`${FIELD} block h-9 min-h-9 resize-none overflow-hidden py-[7px] pr-[84px] leading-5 touch:min-h-11 touch:py-[11px] whitespace-pre max-md:whitespace-pre-wrap touch:whitespace-pre-wrap`} />
         <span className="absolute top-0 right-3 font-mono text-[11px] leading-9 text-ink-3 touch:leading-11">{moveCount == null ? '' : `${moveCount} moves`}</span>
@@ -72,6 +74,9 @@ export function ScrambleForm({ value, onChange, moveCount, invalid, onApply, onR
                   className={saved ? 'border-accent text-accent' : 'disabled:cursor-default disabled:text-disabled'}>{iconStar(saved)}</IconButton>
       <Button title="Open the saved scrambles" onClick={onOpenFavorites} className="max-md:h-11 max-md:flex-[1_1_0]">
         Favorites{favoriteCount ? ` ${favoriteCount}` : ''}
+      </Button>
+      <Button title="Colour the stickers of a cube you scrambled by hand" onClick={onPaint} className="max-md:h-11 max-md:flex-[1_1_0]">
+        Paint
       </Button>
       <Button title={link ? 'Copy a link to this scramble' : 'Only plain face turns (U D L R F B) can be shared'}
               disabled={!link} onClick={share} className="max-md:h-11 max-md:flex-[1_1_0]">

@@ -15,6 +15,8 @@ import { usePlayback } from '../hooks/usePlayback';
 import { usePractice } from '../hooks/usePractice';
 import { oneOf, useStoredState } from '../hooks/useStoredState';
 import { useViewRotation } from '../hooks/useViewRotation';
+import { PaintDialog } from '../components/solve/PaintDialog';
+import { isPainted } from '../lib/paint';
 import { parseSolution } from '../lib/solution';
 import type { LetterMode } from '../lib/types';
 
@@ -46,9 +48,10 @@ export default function SolvePage() {
   // reads the cube. `onLoaded` goes through a stable callback so the order does not matter.
   const resetRef = useRef<() => void>(() => {});
   const onLoaded = useCallback(() => { clearPractice(); resetRef.current(); }, [clearPractice]);
-  const { current, scramble, setScramble, error, parity, changeParity, random, apply, open } = useCube(onLoaded);
+  const { current, scramble, setScramble, error, parity, changeParity, random, apply, open, paint } = useCube(onLoaded);
   const fav = useFavorites();
   const [favOpen, setFavOpen] = useState(false);
+  const [paintOpen, setPaintOpen] = useState(false);
 
   const sections = useMemo(() => (current ? parseSolution(current.solution) : []), [current]);
   const refRows = useMemo(() => sections.flatMap(s => s.rows), [sections]);
@@ -80,8 +83,8 @@ export default function SolvePage() {
   const controls = (
     <SolveControls scramble={scramble} onScramble={setScramble} error={error} onApply={apply} onRandom={random} loaded={current?.scramble ?? null}
                    saved={fav.has(current?.scramble ?? null)} favoriteCount={fav.favorites.length}
-                   onToggleSaved={() => current && fav.toggle(current.scramble)} onOpenFavorites={() => setFavOpen(true)}
-                   moveCount={current ? current.scramble.split(' ').length : null} parity={parity} onParity={changeParity} />
+                   onToggleSaved={() => current && fav.toggle(current.scramble)} onOpenFavorites={() => setFavOpen(true)} onPaint={() => setPaintOpen(true)}
+                   moveCount={current && !isPainted(current.scramble) ? current.scramble.split(' ').length : null} parity={parity} onParity={changeParity} />
   );
 
   return (
@@ -95,6 +98,7 @@ export default function SolvePage() {
       <SolutionSheet tab={tab} sections={sections} parityAlg={parity} moveCount={current ? current.frames.length : null}
                      verified={current ? current.verified : null} solutionText={current?.solution ?? ''}
                      pos={playback.pos} source={playback.source} playing={playback.playing} onJump={jumpToRow} />
+      {paintOpen ? <PaintDialog start={current} onSolve={paint} onClose={() => setPaintOpen(false)} /> : null}
       {favOpen ? <FavoritesDialog favorites={fav.favorites} onLoad={open} onRemove={fav.remove} onClose={() => setFavOpen(false)} /> : null}
     </Workbench>
   );

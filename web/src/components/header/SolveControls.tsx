@@ -15,17 +15,18 @@ interface Props {
   favoriteCount: number;
   onToggleSaved: () => void;
   onOpenFavorites: () => void;
+  onPaint: () => void;
   parity: ParityAlg;
   onParity: (p: ParityAlg) => void;
 }
 
 /** The scramble and parity controls, which only belong in the Solve page's header. */
-export function SolveControls({ scramble, onScramble, moveCount, error, onApply, onRandom, loaded, saved, favoriteCount, onToggleSaved, onOpenFavorites, parity, onParity }: Props) {
+export function SolveControls({ scramble, onScramble, moveCount, error, onApply, onRandom, loaded, saved, favoriteCount, onToggleSaved, onOpenFavorites, onPaint, parity, onParity }: Props) {
   return (
     <>
       <ScrambleForm value={scramble} onChange={onScramble} moveCount={moveCount} invalid={!!error}
                     onApply={onApply} onRandom={onRandom} loaded={loaded}
-                    saved={saved} favoriteCount={favoriteCount} onToggleSaved={onToggleSaved} onOpenFavorites={onOpenFavorites} />
+                    saved={saved} favoriteCount={favoriteCount} onToggleSaved={onToggleSaved} onOpenFavorites={onOpenFavorites} onPaint={onPaint} />
       <div className="flex items-center gap-2">
         <span id="parity-l" className="text-[12px] text-ink-3">Parity</span>
         <Segmented options={PARITY} value={parity} onChange={onParity} labelledBy="parity-l" />

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { scrambleLabel } from '../../lib/paint';
 import { Button } from '../ui/Button';
 import { Meta } from '../ui/text';
 
@@ -28,9 +29,9 @@ export function FavoritesDialog({ favorites, onLoad, onRemove, onClose }: Props)
         <ul className="m-0 min-h-0 flex-[1_1_auto] list-none overflow-auto p-0">
           {favorites.map(f => (
             <li key={f} className="flex items-center gap-3 border-b border-rule-soft px-4 py-2.5">
-              <p className="m-0 min-w-0 flex-[1_1_auto] font-mono text-[12.5px] leading-[1.55] break-words">{f}</p>
+              <p className="m-0 min-w-0 flex-[1_1_auto] font-mono text-[12.5px] leading-[1.55] break-words">{scrambleLabel(f)}</p>
               <Button size="sm" onClick={() => { onLoad(f); close(); }}>Load</Button>
-              <Button size="sm" aria-label={`Remove ${f}`} onClick={() => onRemove(f)}>Remove</Button>
+              <Button size="sm" aria-label={`Remove ${scrambleLabel(f)}`} onClick={() => onRemove(f)}>Remove</Button>
             </li>
           ))}
         </ul>
