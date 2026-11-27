@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from . import method
+from .paint import scramble_state
 from .constants import (DEFAULT_PARITY, LABEL_CORNERS, LABEL_EDGES, LABEL_PARITY,
                         LABEL_SOLVED, LETTERS)
 from .cube import (CORNER, EDGE, apply_alg, apply_algs, home_letter, is_solved,
@@ -154,7 +155,7 @@ def solve(scrambled_state, parity_number=DEFAULT_PARITY) -> Solution:
 
 def verify(scramble, solution) -> bool:
     """Independently execute the printed algorithms on a fresh cube."""
-    state = apply_algs(apply_alg(solved_state(), scramble), solution.algorithms())
+    state = apply_algs(scramble_state(scramble), solution.algorithms())
     return is_solved(state)
 
 

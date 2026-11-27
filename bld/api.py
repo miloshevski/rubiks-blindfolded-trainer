@@ -7,6 +7,7 @@ from .constants import (CORNER_BUFFER_LETTERS, CORNER_NAMES, CORNER_SETUP, DEFAU
                         EDGE_BUFFER_LETTERS, EDGE_NAMES, EDGE_SETUP, EDGE_SPECIAL,
                         EDGE_SWAP_MOVE, LETTERS, OPPOSITE, PARITY_ALGS, Y_PERM)
 from .cube import CORNER, EDGE, apply_alg, invert_alg, random_scramble, slot_index, solved_state
+from .paint import is_painted, scramble_state
 from .practice import check, normalize, user_steps
 from .render import ABSOLUTE_LETTERS, facelets, sticker_cell, sticker_letters
 from .solver import format_solution, pair_up, solve, verify
@@ -22,14 +23,21 @@ def _clean(scramble):
     return " ".join(scramble.split())
 
 
+UNREACHABLE = ("this cube cannot be solved: a single edge is flipped, a single corner is twisted, "
+               "or two pieces are swapped. Check the colours you painted")
+
+
 def build_payload(scramble=None, seed=None, parity=DEFAULT_PARITY):
     """Everything the page needs for one scramble.  Raises ValueError on bad input."""
     _check_parity(parity)
     if not scramble or not scramble.strip():
         scramble = random_scramble(rng=random.Random(seed))
     scramble = _clean(scramble)
-    state = apply_alg(solved_state(), scramble)
+    state = scramble_state(scramble)
     solution = solve(state, parity_number=parity)
+    verified = verify(scramble, solution)
+    if is_painted(scramble) and not verified:
+        raise ValueError(UNREACHABLE)
     return {
         "scramble": scramble,
         "facelets": facelets(state),
@@ -41,7 +49,7 @@ def build_payload(scramble=None, seed=None, parity=DEFAULT_PARITY):
         "edge_cycles": [{"size": n, "kind": k} for n, k in solution.edge_groups],
         "corner_cycles": [{"size": n, "kind": k} for n, k in solution.corner_groups],
         "solution": format_solution(solution),
-        "verified": verify(scramble, solution),
+        "verified": verified,
         "frames": frames_for(state, solution.labelled_steps()),
     }
 
@@ -52,7 +60,7 @@ def check_payload(scramble, edges, corners, parity_number=None):
         raise ValueError("no scramble")
     if parity_number is not None:
         _check_parity(parity_number)
-    state = apply_alg(solved_state(), _clean(scramble))
+    state = scramble_state(_clean(scramble))
     steps = user_steps(edges, corners, parity_number)
     result = check(state, steps)
     result["edges"] = normalize(edges)
@@ -151,7 +159,7 @@ def solve_demo_payload(scramble, part):
     if not scramble or not scramble.strip():
         raise ValueError("no scramble")
     scramble = _clean(scramble)
-    state = apply_alg(solved_state(), scramble)
+    state = scramble_state(scramble)
     solution = solve(state)
     prefix = "Edges " if part == "edges" else "Corners "
     steps = [(label, alg) for label, alg in solution.labelled_steps() if label.startswith(prefix)]
