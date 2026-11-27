@@ -6,7 +6,7 @@ import { ParityRow, PieceRow, SpecialRow } from './AlgRows';
 
 const LEGEND_ITEM = 'inline-flex items-center gap-1.5';
 const LEGEND = (
-  <div className="flex flex-none flex-wrap gap-x-4 gap-y-1.5 border-b border-rule-soft px-5 py-2.5 text-[11.5px] text-ink-3 max-md:px-4">
+  <div className="flex flex-none flex-wrap gap-x-4 gap-y-1.5 border-b border-rule-soft px-5 py-3 text-[13px] text-ink-2 max-md:px-4">
     <span className={LEGEND_ITEM}><span className="font-mono">R U</span> setup</span>
     <span className={LEGEND_ITEM}><span className={cn('font-mono', tokenClass('core'))}>M2</span> swap / Y-perm</span>
     <span className={LEGEND_ITEM}><span className="font-mono text-ink-2">U' R'</span> undo</span>
@@ -16,17 +16,18 @@ const LEGEND = (
 
 const EMPTY = 'm-0 px-5 py-4 text-[12.5px] text-ink-3';
 
-function Group({ title, meta, children, empty, className }: {
-  title: string; meta: string; children: ReactNode[]; empty?: boolean; className?: string;
+function Group({ title, meta, children, empty, className, note }: {
+  title: string; meta: string; children: ReactNode[]; empty?: boolean; className?: string; note?: ReactNode;
 }) {
   return (
-    <div className={cn('min-w-0', className)}>
-      <div className="flex items-baseline justify-between gap-2.5 px-5 pt-3.5 pb-1.5 max-md:px-4">
-        <h3 className="m-0 text-[12px] font-semibold">{title}</h3>
-        <Meta>{meta}</Meta>
+    <div className={cn('min-w-0 px-5 pt-5 max-md:px-4', className)}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 pb-3">
+        <h3 className="m-0 text-[16px] font-semibold">{title}</h3>
+        <Meta className="text-[12px]">{meta}</Meta>
       </div>
-      {children}
-      {empty ? <p className={EMPTY}>No match.</p> : null}
+      {note ? <p className="m-0 mb-3 max-w-[70ch] text-[13px] leading-normal text-ink-2">{note}</p> : null}
+      {empty ? <p className="m-0 py-2 text-[13px] text-ink-3">No match.</p>
+        : <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))]">{children}</div>}
     </div>
   );
 }
@@ -62,7 +63,7 @@ export function AlgorithmsPanel({ data, error, filterRef }: Props) {
         </div>
       </div>
       {LEGEND}
-      <div className="grid flex-[1_1_auto] grid-cols-2 content-start overflow-auto pb-5 max-lg:grid-cols-1">
+      <div className="flex flex-[1_1_auto] flex-col overflow-auto pb-8">
         {data ? <AlgGroups data={data} q={q} />
           : <p className={EMPTY}>{error ? `Could not load the algorithms (${error}).` : 'Loading…'}</p>}
       </div>
@@ -88,22 +89,18 @@ function AlgGroups({ data, q }: { data: AlgData; q: string }) {
         <Group title="Edges" meta="setup + M2 + undo · buffer DF" empty={!edges.length}>
           {edges.map(r => <PieceRow key={r.letter} row={r} bufferNote="buffer (DF)" />)}
         </Group>
-        <Group title="Special edges" meta="own algorithms" empty={!special.length} className="mt-1.5 border-t border-rule-soft">
+        <Group title="Special edges" meta="own algorithms" empty={!special.length}
+               note={<>On even-numbered edge targets (2nd, 4th, …) execute the opposite letter: {pairs.join(', ')}. Each M2 swaps UF and DB, so after an odd number of targets those stickers sit in each other's place.</>}>
           {[
-            <p key="note" className="mx-5 mt-0 mb-2 max-w-[62ch] text-[12px] leading-normal text-ink-2 max-lg:mx-4">
-              On even-numbered edge targets (2nd, 4th, …) execute the opposite letter: {pairs.join(', ')}.
-              {' '}Each M2 swaps UF and DB, so after an odd number of targets those stickers sit in each other's place.
-            </p>,
             ...special.map(r => <SpecialRow key={r.letter} row={r} oppositeSticker={r.opposite ? stickerOf.get(r.opposite) : undefined} />),
           ]}
         </Group>
       </div>
-      <Group title="Corners" meta="Old Pochmann · buffer UBL" empty={!corners.length}
-             className="border-l border-rule max-lg:border-t max-lg:border-l-0">
+      <Group title="Corners" meta="Old Pochmann · buffer UBL" empty={!corners.length}>
         {corners.map(r => <PieceRow key={r.letter} row={r} bufferNote="buffer (UBL)" />)}
       </Group>
       <Group title="Parity" meta="after an odd number of edge targets" empty={!parity.length}
-             className="col-span-full mt-2 border-t border-rule">
+             >
         {parity.map(p => <ParityRow key={p.number} number={p.number} alg={p.alg} isDefault={p.number === data.default_parity} />)}
       </Group>
     </>
