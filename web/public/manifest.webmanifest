@@ -1,0 +1,23 @@
+{
+  "name": "Blindfold Trainer",
+  "short_name": "BLD Trainer",
+  "description": "Learn to solve the 3x3 blindfolded: memo, solution, 3D replay, letter drill, algorithms and a timer.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c0d0e",
+  "theme_color": "#0c0d0e",
+  "categories": ["education", "games"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Solve", "url": "/solve", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Timer", "url": "/timer", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Letter drill", "url": "/letter-drill", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

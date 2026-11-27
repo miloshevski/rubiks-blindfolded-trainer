@@ -15,6 +15,8 @@ from urllib.parse import parse_qs, unquote, urlparse, urlunparse
 from . import seo
 from .api import API, POST_API
 
+mimetypes.add_type("application/manifest+json", ".webmanifest")
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(ROOT, "web", "dist")
 INDEX_FILE = os.path.realpath(os.path.join(DIST_DIR, "index.html"))
@@ -26,7 +28,7 @@ NOT_FOUND = ("<!doctype html><html lang=en><head><meta charset=utf-8><title>Page
              '<p>There is nothing at this address. <a href="/">Go to the Blindfold Trainer home page</a>.</p></main></body></html>')
 
 # Text that is worth compressing; each compressed static file is kept until the file changes.
-COMPRESSIBLE = ("text/", "application/javascript", "application/json", "application/xml", "image/svg+xml")
+COMPRESSIBLE = ("text/", "application/javascript", "application/json", "application/manifest+json", "application/xml", "image/svg+xml")
 _gzipped = {}
 
 NOT_BUILT = (b"<!doctype html><meta charset=utf-8><title>Blindfold Trainer</title>"

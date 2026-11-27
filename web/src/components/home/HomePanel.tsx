@@ -1,6 +1,8 @@
+import { useInstall } from '../../hooks/useInstall';
 import { oneOf, useStoredState } from '../../hooks/useStoredState';
 import { cn } from '../../lib/cn';
 import type { AppMode } from '../../lib/types';
+import { Button } from '../ui/Button';
 import { Segmented, type SegOption } from '../ui/Segmented';
 import { Meta } from '../ui/text';
 import { PageLink } from './PageLink';
@@ -80,6 +82,7 @@ const CARD = 'group flex flex-col gap-2.5 rounded-md border border-rule bg-raise
 export function HomePanel() {
   const [level, setLevel] = useStoredState<Level>('bld.level', 'new', LEVEL_CODEC);
   const pro = level === 'pro';
+  const { canInstall, iphoneHint, install } = useInstall();
   return (
     <section className="min-h-0 min-w-0 overflow-auto [grid-area:home]" aria-label="Home">
       <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-12 px-6 pt-12 pb-16 max-md:gap-9 max-md:px-4 max-md:pt-8 max-md:pb-12">
@@ -104,6 +107,14 @@ export function HomePanel() {
             <Segmented options={LEVELS} value={level} onChange={setLevel} label="Your experience" />
             <Meta>{pro ? 'Skips the walkthrough and puts practice first.' : 'Not sure? Stay here and start with the tutorial.'}</Meta>
           </div>
+          {canInstall ? (
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <Button onClick={install}>Install the app</Button>
+              <Meta>Opens full screen from your home screen; the tutorial and algorithms work offline.</Meta>
+            </div>
+          ) : iphoneHint ? (
+            <Meta className="pt-1">Install it: tap Share in Safari, then Add to Home Screen.</Meta>
+          ) : null}
         </header>
 
         {pro ? (

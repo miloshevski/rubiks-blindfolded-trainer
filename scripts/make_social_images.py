@@ -5,6 +5,7 @@
   og.png               1200x630 link preview (Open Graph / Twitter / Instagram share cards)
   apple-touch-icon.png 180x180  home-screen icon
   favicon-32.png       32x32    browser tab icon
+  icon-192.png, icon-512.png, icon-maskable-512.png   app icons of the web manifest (installable app)
 
 Re-run it after changing the look; the PNGs are committed so the server just serves them.
 """
@@ -120,4 +121,7 @@ if __name__ == "__main__":
     og().save(os.path.join(OUT, "og.png"), optimize=True)
     icon(180, 26).save(os.path.join(OUT, "apple-touch-icon.png"), optimize=True)
     icon(32, 2).save(os.path.join(OUT, "favicon-32.png"), optimize=True)
+    icon(192, 24).save(os.path.join(OUT, "icon-192.png"), optimize=True)
+    icon(512, 64).save(os.path.join(OUT, "icon-512.png"), optimize=True)
+    icon(512, 128).save(os.path.join(OUT, "icon-maskable-512.png"), optimize=True)   # drawn inside the 80% safe zone
     print("wrote", ", ".join(sorted(os.listdir(OUT))))
