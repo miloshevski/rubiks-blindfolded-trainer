@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { Header } from './components/header/Header';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { trackPage } from './lib/analytics';
 import { canonicalizeUrl, PAGE_TITLE, useMode } from './lib/route';
 import type { AppMode } from './lib/types';
 
@@ -28,7 +29,7 @@ export function App() {
   const mode = useMode();
   const Page = PAGES[mode];
   useEffect(canonicalizeUrl, []);
-  useEffect(() => { document.title = PAGE_TITLE[mode]; }, [mode]);
+  useEffect(() => { document.title = PAGE_TITLE[mode]; trackPage(location.pathname); }, [mode]);
   return (
     <>
       {/* every page needs one h1; Home and Tutorial show their own */}

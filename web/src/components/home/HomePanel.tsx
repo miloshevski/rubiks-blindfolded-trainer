@@ -1,3 +1,4 @@
+import { analyticsOn } from '../../lib/analytics';
 import { useInstall } from '../../hooks/useInstall';
 import { oneOf, useStoredState } from '../../hooks/useStoredState';
 import { cn } from '../../lib/cn';
@@ -190,6 +191,7 @@ export function HomePanel() {
             <ul className="m-0 flex list-disc flex-col gap-1.5 pl-4 text-[12.5px] leading-[1.55] text-ink-2">
               <li>Letters are Speffz: A–D on top, then left, front, right, back and down.</li>
               <li>Your solves, saved scrambles and settings stay in this browser.</li>
+              {analyticsOn && <li>Page views are counted anonymously, with no cookies and no personal data.</li>}
               <li>Share a scramble with the Share button on Solve: the link opens the same scramble.</li>
             </ul>
           </div>
