@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, type ComponentType } from 'react';
 import { Header } from './components/header/Header';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { canonicalizeUrl, PAGE_TITLE, useMode } from './lib/route';
 import type { AppMode } from './lib/types';
 
@@ -32,9 +33,11 @@ export function App() {
     <>
       {/* every page needs one h1; Home and Tutorial show their own */}
       {mode === 'home' || mode === 'tutorial' ? null : <h1 className="sr-only">{PAGE_TITLE[mode]}</h1>}
-      <Suspense fallback={loading}>
-        <Page />
-      </Suspense>
+      <ErrorBoundary key={mode}>
+        <Suspense fallback={loading}>
+          <Page />
+        </Suspense>
+      </ErrorBoundary>
     </>
   );
 }
