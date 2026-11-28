@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState, type MouseEvent, type PointerEvent, type Ref } from 'react';
+import { memo, useCallback, useMemo, useRef, useState, type MouseEvent, type PointerEvent, type Ref } from 'react';
 import { usePairWords } from '../../hooks/usePairWords';
 import { cn } from '../../lib/cn';
 import { FACE_COLOR, SPEFFZ_LETTERS as LETTERS } from '../../lib/cube';
@@ -97,7 +97,8 @@ interface Props {
 export function PairsPanel({ filterRef }: Props) {
   const [filter, setFilter] = useState('');
   const [at, setAt] = useState<[number, number] | null>(null);
-  const { words, message, save: saveWord, clearMessage } = usePairWords();
+  const { words, edited, message, save: saveWord, reset, exportFile, importFile, clearMessage } = usePairWords();
+  const fileInput = useRef<HTMLInputElement>(null);
   const [editMode, setEditMode] = useState(false);
   const [editing, setEditing] = useState<[number, number] | null>(null);
   const q = filter.trim().toLowerCase();
@@ -130,14 +131,21 @@ export function PairsPanel({ filterRef }: Props) {
       <Bar title="Letter pairs" rightClassName="min-w-0 flex-[0_1_320px] max-lg:flex-[1_0_100%]"
            meta={<Meta>
              <span aria-live="polite">{found == null ? '576 pairs' : `${found} match${found === 1 ? '' : 'es'}`}</span>
+             {edited > 0 ? <span> · {edited} edited</span> : null}
              <span className="max-md:hidden"> · first letter down, second across</span>
              {editMode ? <span> · click a word to edit, Enter saves, Esc cancels</span> : null}
              {message ? <span role="alert" className="text-bad"> · {message}</span> : null}
            </Meta>}>
         <Button size="sm" variant={editMode ? 'active' : 'default'} aria-pressed={editMode} onClick={toggleEdit}
-                title="Edit the words; changes are saved to letter-pairs.json">
+                title="Edit the words; changes are saved in this browser">
           Edit words
         </Button>
+        <Button size="sm" onClick={exportFile} title="Download all the words as a file you can keep">Export</Button>
+        <Button size="sm" onClick={() => fileInput.current?.click()} title="Load words from an exported file">Import</Button>
+        <input ref={fileInput} type="file" accept="application/json,.json" hidden aria-label="Import pair words"
+               onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) importFile(f); }} />
+        {edited > 0 && <Button size="sm" onClick={() => { if (confirm(`Put all ${edited} edited words back to the defaults?`)) reset(); }}
+                               title="Forget your edits and use the default words">Reset</Button>}
         <input ref={filterRef} className={INPUT} type="search" placeholder="Filter: word or pair, e.g. mo" autoComplete="off"
                spellCheck={false} aria-label="Filter letter pairs" value={filter} onChange={e => setFilter(e.target.value)} />
       </Bar>

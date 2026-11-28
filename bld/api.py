@@ -209,11 +209,5 @@ API = {"/api/cube": _api_cube, "/api/check": _api_check, "/api/algs": lambda fir
        "/api/pairs": lambda first: pairs.load_pairs()}
 
 
-def _api_set_pair(body):
-    if not isinstance(body, dict):
-        raise ValueError("expected a JSON object")
-    return pairs.set_pair(body.get("pair"), body.get("word"))
-
-
-# Endpoints that change something: they take a JSON body.
-POST_API = {"/api/pairs": _api_set_pair}
+# Endpoints that change something take a JSON body. None for now: the server keeps no per-user data.
+POST_API = {}

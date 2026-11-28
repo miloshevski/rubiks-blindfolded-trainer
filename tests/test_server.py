@@ -2,9 +2,7 @@ import gzip
 import http.client
 import json
 import os
-import shutil
 import sys
-import tempfile
 import threading
 import unittest
 import urllib.error
@@ -152,28 +150,12 @@ class Http(unittest.TestCase):
             with e:
                 return e.code, json.loads(e.read())
 
-    def test_edit_pair_word(self):
-        # Work on a copy so the real dictionary is never touched.
-        tmp = tempfile.mkdtemp()
-        copy = os.path.join(tmp, "letter-pairs.json")
-        shutil.copy(pairs.PAIRS_FILE, copy)
-        original, pairs.PAIRS_FILE = pairs.PAIRS_FILE, copy
-        try:
-            status, body = self.post("/api/pairs", {"pair": "AB", "word": "  Big   Abacus "})
-            self.assertEqual((status, body), (200, {"pair": "AB", "word": "Big Abacus"}))
-            status, _, raw = self.get("/api/pairs")
-            words = json.loads(raw)
-            self.assertEqual((status, words["AB"], len(words)), (200, "Big Abacus", 576))
-            with open(copy, encoding="utf-8") as f:
-                self.assertEqual(f.read(), json.dumps(words, indent=2, ensure_ascii=False))
-            for bad in ({"pair": "ZZ", "word": "x"}, {"pair": "AB", "word": "  "}, {"pair": "AB", "word": "x" * 41}, [1]):
-                self.assertEqual(self.post("/api/pairs", bad)[0], 400, bad)
-            self.assertEqual(self.post("/api/pairs", b"{", )[0], 400)
-            self.assertEqual(self.post("/api/pairs", {"pair": "AB", "word": "x"}, "text/plain")[0], 415)
-            self.assertEqual(self.post("/api/nope", {})[0], 404)
-        finally:
-            pairs.PAIRS_FILE = original
-            shutil.rmtree(tmp)
+    def test_pair_words_are_read_only(self):
+        status, _, raw = self.get("/api/pairs")
+        self.assertEqual((status, len(json.loads(raw))), (200, 576))
+        # nobody can change the shared words: saving is not an endpoint any more
+        self.assertEqual(self.post("/api/pairs", {"pair": "AB", "word": "x"})[0], 404)
+        self.assertEqual(self.post("/api/nope", {})[0], 404)
 
     def test_head_requests(self):
         for path in ("/", "/tutorial", "/api/algs", "/robots.txt"):

@@ -44,7 +44,7 @@ function Line({ name, text, words, edit, editing, onEdit, onSave, onCancel }: Li
 }
 
 /** The dictionary word for each letter pair typed in the recall check (or the computer's, if none).
- *  "Edit words" lets you change a word right here; it is saved to letter-pairs.json. */
+ *  "Edit words" lets you change a word right here; it is saved in this browser. */
 export default function PairWords({ edges, corners, fallbackEdges, fallbackCorners }: {
   edges: string;
   corners: string;
@@ -73,7 +73,7 @@ export default function PairWords({ edges, corners, fallbackEdges, fallbackCorne
           {message ? <span role="alert" className="text-bad">{message}</span> : edit ? 'Click a word to edit it. Enter saves, Esc cancels.' : null}
         </span>
         <Button size="sm" variant={edit ? 'active' : 'default'} aria-pressed={edit} onClick={toggle}
-                title="Edit the words; changes are saved to letter-pairs.json">
+                title="Edit the words; changes are saved in this browser">
           Edit words
         </Button>
       </div>

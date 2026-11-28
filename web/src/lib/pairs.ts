@@ -26,3 +26,21 @@ export function typedPairs(text: string, words: Record<string, string>): TypedPa
   }
   return out;
 }
+
+export const MAX_WORD = 40;
+
+/**
+ * The valid, changed words of `raw` (an object of pair → word, e.g. the saved edits or an imported
+ * file): only pairs that exist in `defaults`, trimmed, non-empty, at most 40 characters, and
+ * different from the default. Anything else is dropped.
+ */
+export function cleanWords(raw: unknown, defaults: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [code, value] of Object.entries(raw)) {
+    if (!(code in defaults) || typeof value !== 'string') continue;
+    const word = value.trim().replace(/\s+/g, ' ');
+    if (word && word.length <= MAX_WORD && word !== defaults[code]) out[code] = word;
+  }
+  return out;
+}
