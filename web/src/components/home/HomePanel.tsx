@@ -38,7 +38,7 @@ const FEATURES: readonly Feature[] = [
   },
   {
     to: 'pairs', title: 'Pairs',
-    text: 'The 24 × 24 letter-pair dictionary. Each pair has a word you can edit to make it your own, and edits are saved to the dictionary file.',
+    text: 'The 24 × 24 letter-pair dictionary. Each pair has a word you can edit to make it your own, and your edits stay in this browser (export them to keep a copy).',
     tags: ['576 words', 'filter', 'editable'],
   },
   {
@@ -74,6 +74,9 @@ const PRACTICE: readonly { to: AppMode; tag: string; title: string; text: string
   { to: 'tutorial', tag: 'Tutorial', title: 'Refresh the method', text: 'Skim the lessons on tracing, M2, Old Pochmann and parity whenever something slips.' },
   { to: 'algs', tag: 'Algorithms', title: 'Check an algorithm', text: 'Setup, core and undo for every target, plus the parity algorithms. Press / to filter.' },
 ];
+
+const REPO = 'https://github.com/miloshevski/rubiks-blindfolded-trainer';
+const ISSUE_LINK = 'font-medium text-accent underline underline-offset-2 hover:text-ink';
 
 const CARD = 'group flex flex-col gap-2.5 rounded-md border border-rule bg-raise p-4 text-ink no-underline transition-colors duration-[120ms] '
   + 'hover:border-edge-2 hover:bg-raise-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
@@ -173,6 +176,15 @@ export function HomePanel() {
         </div>
 
         <div className="grid gap-x-10 gap-y-5 border-t border-rule pt-8 [grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))]">
+          <div>
+            <h2 className="m-0 mb-2 text-[13px] font-semibold">Feedback</h2>
+            <p className="m-0 text-[12.5px] leading-[1.55] text-ink-2">
+              Found a bug, got confused, or want something added? Tell me on{' '}
+              <a href={`${REPO}/issues/new/choose`} target="_blank" rel="noopener noreferrer" className={ISSUE_LINK}>GitHub</a>
+              {' '}(a free account is needed), or see{' '}
+              <a href={`${REPO}/issues`} target="_blank" rel="noopener noreferrer" className={ISSUE_LINK}>what others reported</a>.
+            </p>
+          </div>
           <div>
             <h2 className="m-0 mb-2 text-[13px] font-semibold">Good to know</h2>
             <ul className="m-0 flex list-disc flex-col gap-1.5 pl-4 text-[12.5px] leading-[1.55] text-ink-2">

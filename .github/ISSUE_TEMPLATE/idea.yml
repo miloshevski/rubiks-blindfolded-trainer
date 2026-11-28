@@ -1,0 +1,10 @@
+name: Idea or question
+description: A feature you would like, something confusing, or a question about the method
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would help?
+    validations:
+      required: true
