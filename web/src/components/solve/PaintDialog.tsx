@@ -7,6 +7,7 @@ import { FACES, type CubeView, type Face } from '../../lib/types';
 import { Button } from '../ui/Button';
 import { Segmented, type SegOption } from '../ui/Segmented';
 import { Meta } from '../ui/text';
+import { ScanPanel } from './ScanPanel';
 
 // Unfolded cube: U above F, then L F R B across, D below F.
 const NET_AREA: Record<Face, string> = { U: '1 / 2', L: '2 / 1', F: '2 / 2', R: '2 / 3', B: '2 / 4', D: '3 / 2' };
@@ -139,6 +140,8 @@ export function PaintDialog({ start, onSolve, onClose }: Props) {
     if (why) setProblem(why); else close();
   };
   const fill = (g: Grid) => { setProblem(''); setOpen(null); setGrid(g); };
+  const canScan = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
+  const [scanning, setScanning] = useState(false);
 
   return (
     <dialog ref={dialog} aria-label="Paint a cube" onClose={onClose} onKeyDown={keyDown}
@@ -304,6 +307,7 @@ export function PaintDialog({ start, onSolve, onClose }: Props) {
 
       <div className="flex flex-none flex-wrap items-center justify-between gap-2 border-t border-rule px-5 py-3.5 max-md:flex-col max-md:items-stretch max-md:px-3">
         <div className="flex gap-2 max-md:[&>button]:flex-1">
+          {canScan && <Button size="sm" onClick={() => setScanning(true)}>Scan</Button>}
           <Button size="sm" onClick={() => fill(blankGrid())}>Clear</Button>
           <Button size="sm" onClick={() => fill(solvedGrid())}>Solved</Button>
           <Button size="sm" disabled={!start} onClick={() => start && fill(gridFromFacelets(start.facelets))}>Current cube</Button>
@@ -313,6 +317,7 @@ export function PaintDialog({ start, onSolve, onClose }: Props) {
           <Button variant="primary" disabled={!scramble || busy} onClick={solve}>{busy ? 'Solving…' : 'Solve it'}</Button>
         </div>
       </div>
+      {scanning && <ScanPanel onCancel={() => setScanning(false)} onDone={g => { fill(g); setScanning(false); }} />}
     </dialog>
   );
 }
